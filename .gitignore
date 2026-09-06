@@ -1,0 +1,35 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.spec
+!build.spec
+.venv/
+*.egg-info/
+.pytest_cache/
+*.log
+.env
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Buildozer artifacts (Android SDK/NDK caches)
+.buildozer/
+
+# Internal tooling
+.omo/
+.gigacode/
+.gigaide/
+
+# Large files
+*.pdf
+*.zip
+*.tar.gz
+*.apk
+*.aab
