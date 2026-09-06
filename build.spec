@@ -11,8 +11,7 @@ import os
 
 block_cipher = None
 
-# Add resources (icon, etc.)
-resource_dir = os.path.join(os.path.dirname(__file__), 'oko_app', 'resources')
+resource_dir = os.path.join(os.getcwd(), 'oko_app', 'resources')
 datas = []
 if os.path.isdir(resource_dir):
     datas.append((resource_dir, 'oko_app/resources'))
