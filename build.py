@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build script for OKO БОД Manager.
+"""Build script for OKO BOD Manager.
 
 Usage:
     python build.py          # Build for current platform
@@ -10,7 +10,13 @@ import subprocess
 import sys
 import shutil
 import os
+import io
 from pathlib import Path
+
+# Fix Windows cp1252 encoding on GitHub Actions
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 
 def clean() -> None:
