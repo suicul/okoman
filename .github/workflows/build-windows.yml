@@ -30,7 +30,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name:oko-manager-windows
+          name: oko-manager-windows
           path: dist/oko_manager/
           retention-days: 30
           if-no-files-found: error
@@ -60,7 +60,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name:oko-manager-windows-legacy
+          name: oko-manager-windows-legacy
           path: dist/oko_manager/
           retention-days: 30
           if-no-files-found: error
