@@ -1,11 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for OKO БОД Manager.
-
-Build command:
-    pyinstaller build.spec
-
-Output: dist/oko_manager/
-"""
+"""PyInstaller spec for OKO BOD Manager."""
 
 import os
 
@@ -42,29 +36,21 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='oko_manager',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # No console window
+    upx_exclude=[],
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon=os.path.join(resource_dir, 'icon.ico') if os.path.isdir(resource_dir) else None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='oko_manager',
 )

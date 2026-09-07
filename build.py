@@ -52,11 +52,10 @@ def build() -> None:
         print()
         print("=" * 60)
         print("Build successful!")
-        print(f"Output: dist/oko_manager/")
         if sys.platform == "win32":
-            print(f"Executable: dist/oko_manager/oko_manager.exe")
+            print("Executable: dist/oko_manager.exe")
         else:
-            print(f"Executable: dist/oko_manager/oko_manager")
+            print("Executable: dist/oko_manager")
         print("=" * 60)
     else:
         print()
