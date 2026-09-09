@@ -1,12 +1,84 @@
 name: Build Windows EXE
 
+# Релиз 1.0: два onefile-бинаря под Windows 7 (последняя ОС полевых ноутбуков).
+# Win7 собирается ТОЛЬКО на Python 3.8 + PyInstaller 5.x:
+#   - Python 3.9+ не ставится на Win7 (требует 8.1+);
+#   - PyInstaller 6.x bootloader не запускается на Win7.
+# x86 собирается 32-битным Python (работает и на 64-бит Win7).
+
 on:
   push:
     branches: [ main, master ]
+    tags: [ "v*" ]
   workflow_dispatch:
 
 jobs:
-  build-windows:
+  build-win7-x64:
+    name: Win7 x64 (onefile)
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.8 (last with Win7 support)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8.10'
+          architecture: 'x64'
+          cache: 'pip'
+          cache-dependency-path: requirements-win7.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade "pip<24.1"
+          pip install -r requirements-win7.txt
+
+      - name: Build onefile EXE
+        run: python build.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oko-manager-win7-x64
+          path: dist/oko_manager.exe
+          retention-days: 90
+          if-no-files-found: error
+
+  build-win7-x86:
+    name: Win7 x86 (onefile, 32-bit)
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.8 x86 (last with Win7 support)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8.10'
+          architecture: 'x86'
+          cache: 'pip'
+          cache-dependency-path: requirements-win7.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade "pip<24.1"
+          pip install -r requirements-win7.txt
+
+      - name: Build onefile EXE
+        run: python build.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oko-manager-win7-x86
+          path: dist/oko_manager.exe
+          retention-days: 90
+          if-no-files-found: error
+
+  build-modern:
+    name: Modern Windows (smoke check)
     runs-on: windows-latest
 
     steps:
@@ -30,37 +102,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oko-manager-windows
-          path: dist/oko_manager.exe
-          retention-days: 30
-          if-no-files-found: error
-
-  build-windows-legacy:
-    runs-on: windows-latest
-    name: Build (Legacy Compat)
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install PyQt5==5.15.9 pyserial pyinstaller
-
-      - name: Build with PyInstaller
-        run: python build.py
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: oko-manager-windows-legacy
+          name: oko-manager-windows-modern
           path: dist/oko_manager.exe
           retention-days: 30
           if-no-files-found: error

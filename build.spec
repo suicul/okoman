@@ -7,6 +7,8 @@ block_cipher = None
 
 resource_dir = os.path.join(os.getcwd(), 'oko_app', 'resources')
 datas = []
+if os.path.isfile('oko_icon.png'):
+    datas.append(('oko_icon.png', '.'))
 if os.path.isdir(resource_dir):
     datas.append((resource_dir, 'oko_app/resources'))
 

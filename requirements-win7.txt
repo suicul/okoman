@@ -1,0 +1,7 @@
+# Зависимости для сборки релиза 1.0 под Windows 7 (последние версии с поддержкой Win7).
+# Сборка: Python 3.8.10 (x86 для 32-бит, x64 для 64-бит) + pip install -r requirements-win7.txt
+# Python 3.9+ НЕ подходит: установщик требует Windows 8.1+.
+# PyInstaller 6.x НЕ подходит: bootloader собран новым MSVC без Win7.
+PyQt5==5.15.9
+pyserial==3.5
+pyinstaller==5.13.2
