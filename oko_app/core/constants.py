@@ -32,9 +32,9 @@ TERMINAL_DEDUP_WINDOW = 0.1
 
 # ── Connection ───────────────────────────────────────────────────────────────
 
-# WiFi default settings
-WIFI_DEFAULT_IP = "192.168.1.100"
-WIFI_DEFAULT_PORT = 20000
+# WiFi default settings (ТД платы: OKO_XXXXXX, пароль 222333444 — см. руководство, разд. 7–8)
+WIFI_DEFAULT_IP = "192.168.4.1"
+WIFI_DEFAULT_PORT = 1234
 
 # Port scan interval (milliseconds)
 PORT_SCAN_INTERVAL = 3000

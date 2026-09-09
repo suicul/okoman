@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
 
 
 class TransportType(Enum):
@@ -147,8 +147,7 @@ class SerialTransport(BaseTransport):
             self.connected.emit(address)
         except Exception as exc:
             self._is_connected = False
-            self.error.emit(str(exc))
-            self.error.emit(f"Serial connection failed: {exc}")
+            self.error.emit("Serial connection failed: {}".format(exc))
 
     def disconnect(self) -> None:
         """Disconnect from serial port."""
@@ -176,14 +175,60 @@ class SerialTransport(BaseTransport):
         return self.scan_ports()
 
 
+class _TcpReader(QThread):
+    """Фоновое чтение TCP-сокета, нарезка на строки \\r\\n/\\n."""
+
+    line_ready = pyqtSignal(str)
+    finished = pyqtSignal()
+    read_error = pyqtSignal(str)
+
+    def __init__(self, sock: socket.socket) -> None:
+        super().__init__()
+        self._sock = sock
+        self._running = True
+
+    def run(self) -> None:
+        buf = b""
+        try:
+            while self._running:
+                try:
+                    chunk = self._sock.recv(4096)
+                except socket.timeout:
+                    continue
+                except (OSError, ConnectionError) as exc:
+                    self.read_error.emit("Ошибка чтения WiFi: {}".format(exc))
+                    break
+                if not chunk:
+                    self.read_error.emit("Устройство закрыло WiFi-соединение")
+                    break
+                buf += chunk
+                while b"\n" in buf:
+                    raw, buf = buf.split(b"\n", 1)
+                    if raw.endswith(b"\r"):
+                        raw = raw[:-1]
+                    line = raw.decode("utf-8", errors="replace").strip()
+                    if line:
+                        self.line_ready.emit(line)
+        finally:
+            if buf:
+                line = buf.decode("utf-8", errors="replace").strip()
+                if line:
+                    self.line_ready.emit(line)
+            self.finished.emit()
+
+    def stop(self) -> None:
+        self._running = False
+
+
 class TcpTransport(BaseTransport):
-    """TCP/IP transport (WiFi)."""
+    """TCP/IP transport (WiFi: ТД OKO_XXXXXX, 192.168.4.1:1234)."""
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(TransportType.TCP, parent)
         self._socket: Optional[socket.socket] = None
         self._read_buffer = b""
-        self._server: Optional[socket.socket] = None
+        self._read_thread: Optional[_TcpReader] = None
+        self._reader: Optional[_TcpReader] = None
 
     @property
     def type(self) -> TransportType:
@@ -194,22 +239,19 @@ class TcpTransport(BaseTransport):
         return self._socket is not None and self._socket.fileno() != -1
 
     @staticmethod
-    def scan_network(subnet: str = "192.168.1") -> list[TransportInfo]:
-        """Scan network for OKO devices (port 20000)."""
-        result = []
-        # Scan common subnet addresses
-        for i in range(1, 255):
-            host = f"{subnet}.{i}"
-            result.append(TransportInfo(
-                transport_type=TransportType.TCP,
-                address=host,
-                description=f"Device at {host}:20000",
-                is_connected=False,
-            ))
-        return result
+    def scan_network(subnet: str = "192.168.4") -> list[TransportInfo]:
+        """Сканирование сети: активного пробинга нет (плата — точка доступа
+        с фиксированным 192.168.4.1:1234), поэтому возвращаем кандидата
+        по умолчанию, а не 254 фейковых хоста."""
+        return [TransportInfo(
+            transport_type=TransportType.TCP,
+            address="192.168.4.1",
+            description="БОД (ТД OKO_XXXXXX) 192.168.4.1:1234",
+            is_connected=False,
+        )]
 
-    def connect(self, address: str, port: int = 20000, **kwargs: Any) -> None:
-        """Connect to device via TCP."""
+    def connect(self, address: str = "192.168.4.1", port: int = 1234, **kwargs: Any) -> None:
+        """Connect to device via TCP (WiFi ТД платы)."""
         if self.is_connected:
             self.disconnect()
 
@@ -217,17 +259,29 @@ class TcpTransport(BaseTransport):
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.settimeout(5.0)
             self._socket.connect((address, port))
+            self._socket.settimeout(1.0)
             self._is_connected = True
+            self._start_reader()
             self.connected.emit(f"{address}:{port}")
         except Exception as exc:
             self._is_connected = False
             if self._socket:
-                self._socket.close()
+                try:
+                    self._socket.close()
+                except Exception:
+                    pass
                 self._socket = None
             self.error.emit(f"TCP connection failed: {exc}")
 
     def disconnect(self) -> None:
         """Disconnect TCP socket."""
+        if self._reader is not None:
+            self._reader.stop()
+        if self._read_thread is not None and self._read_thread.isRunning():
+            self._read_thread.quit()
+            self._read_thread.wait(2000)
+        self._reader = None
+        self._read_thread = None
         if self._socket:
             try:
                 self._socket.close()
@@ -236,6 +290,33 @@ class TcpTransport(BaseTransport):
             self._socket = None
         self._is_connected = False
         self.disconnected.emit()
+
+    def send_raw(self, data: bytes) -> None:
+        """Отправить готовые байты (мост для SerialWorker)."""
+        if not self.is_connected or not self._socket:
+            raise OSError("Нет подключения")
+        self._socket.sendall(data)
+
+    def _start_reader(self) -> None:
+        assert self._socket is not None
+        self._read_thread = QThread(self)
+        self._reader = _TcpReader(self._socket)
+        self._reader.moveToThread(self._read_thread)
+        self._reader.line_ready.connect(self._on_reader_line)
+        self._reader.read_error.connect(self._on_reader_error)
+        self._reader.finished.connect(self._read_thread.quit)
+        self._read_thread.started.connect(self._reader.run)
+        self._read_thread.start()
+
+    @pyqtSlot(str)
+    def _on_reader_line(self, line: str) -> None:
+        self._emit_data(line)
+
+    @pyqtSlot(str)
+    def _on_reader_error(self, message: str) -> None:
+        self.error.emit(message)
+        if self.is_connected:
+            self.disconnect()
 
     def send(self, data: str) -> bool:
         """Send data via TCP."""

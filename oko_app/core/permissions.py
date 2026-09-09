@@ -5,7 +5,12 @@ from __future__ import annotations
 import os
 import platform
 import subprocess
-import grp
+try:
+    import grp  # noqa: F401 — только Unix, на Windows отсутствует
+    _HAS_GRP = True
+except ImportError:  # Windows 7/10/11
+    grp = None  # type: ignore[assignment]
+    _HAS_GRP = False
 from dataclasses import dataclass
 from typing import Optional
 
@@ -38,6 +43,8 @@ def check_serial_permissions(port: str = "") -> PermissionStatus:
 
 
 def _find_serial_group() -> Optional[str]:
+    if not _HAS_GRP:
+        return None
     for name in SERIAL_GROUPS:
         try:
             grp.getgrnam(name)
@@ -97,22 +104,13 @@ def _check_linux(port: str) -> PermissionStatus:
 
 
 def _check_windows(port: str) -> PermissionStatus:
-    try:
-        import ctypes
-        is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-    except Exception:
-        is_admin = False
-
-    if is_admin:
-        return PermissionStatus(
-            has_access=True, platform="Windows",
-            message="Запущено от администратора",
-        )
-
+    # COM-порты в Windows не требуют прав администратора.
+    # Достаточно того, что порт существует и не занят — это проверит pyserial
+    # при открытии. Ложное требование админа блокировало работу на полевых
+    # ноутбуках без прав администратора, поэтому всегда разрешаем.
     return PermissionStatus(
-        has_access=False, platform="Windows",
-        message="Рекомендуется запуск от администратора для доступа к COM-портам.",
-        needs_elevation=True,
+        has_access=True, platform="Windows",
+        message="OK — доступ к COM-порту не требует повышения прав.",
     )
 
 

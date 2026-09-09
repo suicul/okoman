@@ -101,8 +101,11 @@ class OkoLogger:
     @classmethod
     def reset(cls) -> None:
         """Reset the singleton (for testing)."""
-        if cls._instance:
+        if cls._instance is not None:
             for handler in cls._instance._logger.handlers[:]:
-                handler.close()
-            cls._logger.handlers.clear()
+                try:
+                    handler.close()
+                except Exception:
+                    pass
+                cls._instance._logger.removeHandler(handler)
             cls._instance = None

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Optional, NamedTuple
 
@@ -41,6 +42,13 @@ def decode_response_line(line_bytes: bytes) -> str:
     decoded = re.sub(r'\x1b\[[0-9;]*[mGKH]', '', decoded)
     # Strip \r\n
     decoded = decoded.strip()
+
+    # Бинарный мусор (нулевые/управляющие символы) показываем как HEX,
+    # иначе в терминал попадут «кракозябры» вместо диагностики.
+    # Проверка ПОСЛЕ снятия ANSI: сам ESC уже вырезан выше.
+    if any(ord(ch) < 32 and ch not in ("\t", "\r", "\n") for ch in decoded):
+        hex_view = " ".join("{:02X}".format(b) for b in line_bytes)
+        return "HEX: {}".format(hex_view)
 
     return decoded
 
@@ -106,6 +114,36 @@ class SerialWorker(QObject):
         self._pending_gps: dict = {}
         self._last_gps_time: float = 0  # Throttle GPS updates
         self._last_ver_time: float = 0  # Filter duplicate VER responses
+        # Внешний транспорт (WiFi/TCP): функция отправки байт и флаг линка.
+        # Позволяет гнать очередь команд и парсинг через общий тракт _on_line
+        # как для USB, так и для WiFi — без дублирования логики.
+        self._ext_send: Optional[Callable[[bytes], None]] = None
+        self._ext_connected: bool = False
+
+    # ── Внешний транспорт (WiFi/TCP) ────────────────────────────────────
+
+    def attach_external(self, send_fn: Callable[[bytes], None]) -> None:
+        """Подключить внешний канал отправки (например, TCP-сокет WiFi).
+
+        После attach очередь команд и парсинг ответов работают так же,
+        как для USB. Входящие строки внешнего канала нужно подавать
+        в on_external_line().
+        """
+        self._ext_send = send_fn
+        self._ext_connected = True
+        self._cancel_commands()
+
+    def detach_external(self) -> None:
+        """Отключить внешний канал."""
+        self._ext_send = None
+        self._ext_connected = False
+        self._cancel_commands()
+
+    @pyqtSlot(str)
+    def on_external_line(self, line: str) -> None:
+        """Принять строку от внешнего транспорта (WiFi/TCP)."""
+        if self._ext_connected:
+            self._on_line(line)
 
     @staticmethod
     def available_ports() -> list:
@@ -167,9 +205,13 @@ class SerialWorker(QObject):
     def update_known_ports(self) -> None:
         self._known_ports = set(self.available_ports())
 
+    #: Маркеры «живого» ответа БОД на пробный VER (см. руководство, разд. 6).
+    _PROBE_MARKERS = (b"Ver", b"ver", b"Version", b"Firmware", b"Serial", b">>", b"OK")
+
     @staticmethod
-    def auto_detect_baud(port: str, bauds: tuple = (9600, 19200, 38400, 57600, 115200)) -> Optional[int]:
-        """Try common baud rates and return the first one that responds."""
+    def auto_detect_baud(port: str, bauds: tuple = (115200, 57600, 38400, 19200, 9600)) -> Optional[int]:
+        """Try baud rates (сначала 115200 из руководства) и вернуть первый с живым ответом."""
+        fallback: Optional[int] = None
         for baud in bauds:
             try:
                 s = serial.Serial(
@@ -177,20 +219,23 @@ class SerialWorker(QObject):
                     bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE, timeout=2,
                 )
-                s.write(b"VER\r\n")
-                s.flush()
-                # Wait for response
-                import time
-                time.sleep(0.5)
-                response = s.read(s.in_waiting or 256)
-                s.close()
-                text = decode_response_line(response).strip()
-                # Accept ANY response (even empty or >>) as success
-                # The device is alive if we can open the port
-                return baud
+                try:
+                    s.reset_input_buffer()
+                    s.write(b"VER\r\n")
+                    s.flush()
+                    time.sleep(0.8)
+                    response = s.read(s.in_waiting or 1024)
+                finally:
+                    s.close()
+                if not response:
+                    continue
+                if any(m in response for m in SerialWorker._PROBE_MARKERS):
+                    return baud
+                if fallback is None:
+                    fallback = baud  # порт открывается, но молчит — запомним как запасной
             except Exception:
                 continue
-        return None
+        return fallback
 
     @pyqtSlot(str)
     def connect_to(self, port: str, baud: int = 115200) -> None:
@@ -214,11 +259,14 @@ class SerialWorker(QObject):
                 stopbits=serial.STOPBITS_ONE,
                 timeout=1,
             )
-            # Test if port works - accept ANY response
+            # Пробный VER: даём устройству время ответить (без сна read почти
+            # всегда пустой и проверка бессмысленна).
+            self._serial.reset_input_buffer()
             self._serial.write(b"VER\r\n")
             self._serial.flush()
-            response = self._serial.read(self._serial.in_waiting or 256)
-            # Device is alive if port opens
+            time.sleep(0.6)
+            _resp = self._serial.read(self._serial.in_waiting or 1024)
+            # Порт открыт — устройство считаем живым; содержимое проверит автоскан.
         except serial.SerialException:
             # Port failed - try auto-detect
             if self._serial:
@@ -283,6 +331,8 @@ class SerialWorker(QObject):
     def disconnect(self) -> None:
         self._cancel_commands()
         self._reading = False
+        self._ext_send = None
+        self._ext_connected = False
         if self._reader:
             self._reader.stop()
         if self._read_thread and self._read_thread.isRunning():
@@ -302,7 +352,8 @@ class SerialWorker(QObject):
 
     @property
     def is_connected(self) -> bool:
-        return self._serial is not None and self._serial.is_open
+        serial_ok = self._serial is not None and self._serial.is_open
+        return serial_ok or self._ext_connected
 
     @pyqtSlot(str)
     def send_command(self, command: str, response_kind: str = "line",
@@ -338,9 +389,6 @@ class SerialWorker(QObject):
         request = self._active_request
         if request is None or not self.is_connected:
             return
-        if not self.is_connected:
-            self.error.emit("Нет подключения")
-            return
         if request.response_kind == "set":
             self._pending_settings = {}
             self._in_settings_block = False
@@ -350,8 +398,12 @@ class SerialWorker(QObject):
             self._pending_gps = {}
         try:
             data = (request.command + "\r\n").encode("ascii")
-            self._serial.write(data)
-            self._serial.flush()
+            if self._ext_send is not None and self._ext_connected:
+                self._ext_send(data)  # WiFi/TCP тракт
+            else:
+                assert self._serial is not None
+                self._serial.write(data)
+                self._serial.flush()
             self._active_attempt += 1
             self._command_timer.start(request.timeout_ms)
         except (serial.SerialException, OSError) as exc:
@@ -456,6 +508,13 @@ class SerialWorker(QObject):
                 return  # Skip duplicate VER
             self._last_ver_time = now
 
+        # Конец SET-блока словом-маркером (старые прошивки шлют READY/OK
+        # вместо строки «====== Last Address ... Len:»).
+        if stripped in ("READY", "OK", "DONE"):
+            self._parse_settings_end(stripped)
+            self._match_active_response(stripped)
+            return
+
         # All other lines go to terminal
         if stripped:  # Don't emit empty lines
             self.data_received.emit(line)
@@ -471,7 +530,10 @@ class SerialWorker(QObject):
             return
         matched = {
             "line": True,
-            "ver": any(kw in line for kw in ("Ver:", "ver:", "Version:", "make:", "Make:", "Build", "build")),
+            # VER из двух строк: «Firmware Version: X» + «Build Date: ...» —
+            # завершаем по строке со сборкой (Make:/Build), иначе очередь
+            # убежит дальше до прихода даты сборки.
+            "ver": any(kw in line for kw in ("Make:", "make:", "Build", "build")),
             "serial": re.search(r"(Serial|SERIAL)[:\s]", line, re.IGNORECASE) is not None,
             "pos": re.search(r"(Lat|Lng|Pos|POS):", line, re.IGNORECASE) is not None,
             "gsm": re.search(r"Signal:\s*\d+", line, re.IGNORECASE) is not None,
@@ -587,8 +649,9 @@ class SerialWorker(QObject):
         """Parse a SET key=value line and add to pending settings."""
         stripped = line.strip()
 
-        # Format: "SET: Key = Value" or "SET: Key=Value"
-        set_match = re.match(r"^SET:\s*(.+?)\s*=\s*(.+)$", stripped, re.IGNORECASE)
+        # Format: "SET: Key = Value", "SET: Key=Value" или голый "KEY=VALUE"
+        # (плата в разных прошивках шлёт оба варианта).
+        set_match = re.match(r"^(?:SET:\s*)?(.+?)\s*=\s*(.+)$", stripped, re.IGNORECASE)
         if set_match:
             key = set_match.group(1).strip()
             val = set_match.group(2).strip()
@@ -600,16 +663,14 @@ class SerialWorker(QObject):
 
     def _parse_settings_end(self, line: str) -> None:
         """Handle end of settings block."""
-        if not self._pending_settings:
-            return
-
         active = self._active_request
         self._in_settings_block = False
 
         if active is not None and active.response_kind == "set":
-            # Finish SET command with collected settings
+            # Завершаем SET-запрос и при пустом блоке: маркер конца пришёл,
+            # висеть до таймаута (60 с в автоскане) нельзя.
             self._finish_active(True, "SET block: {} keys".format(len(self._pending_settings)))
-        
+
         # Clear settings to avoid duplicate parsing
         self._pending_settings = {}
 

@@ -45,9 +45,10 @@ def test_serial_transport_scan_returns_list() -> None:
 
 
 def test_tcp_transport_scan_returns_list() -> None:
-    network = TcpTransport.scan_network("192.168.1")
+    network = TcpTransport.scan_network("192.168.4")
     assert isinstance(network, list)
-    assert len(network) == 254  # Scans 1-254
+    assert len(network) == 1  # плата — ТД с фиксированным адресом
+    assert network[0].address == "192.168.4.1"
 
 
 def test_tcp_transport_parse_line_crlf() -> None:
