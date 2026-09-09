@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional
 
-from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot, QTimer
 
 
 class TransportType(Enum):
@@ -235,6 +235,9 @@ class TcpTransport(BaseTransport):
         self._read_buffer = b""
         self._read_thread: Optional[_TcpReader] = None
         self._reader: Optional[_TcpReader] = None
+        self._keepalive = QTimer(self)
+        self._keepalive.setInterval(60000)
+        self._keepalive.timeout.connect(self._send_keepalive)
 
     @property
     def type(self) -> TransportType:
@@ -269,6 +272,7 @@ class TcpTransport(BaseTransport):
             self._is_connected = True
             logging.getLogger("oko.tcp").info("TCP connected to %s:%s", address, port)
             self._start_reader()
+            self._keepalive.start()
             self.connected.emit(f"{address}:{port}")
         except Exception as exc:
             self._is_connected = False
@@ -282,6 +286,7 @@ class TcpTransport(BaseTransport):
 
     def disconnect(self) -> None:
         """Disconnect TCP socket."""
+        self._keepalive.stop()
         if self._reader is not None:
             self._reader.stop()
         if self._read_thread is not None and self._read_thread.isRunning():
@@ -305,6 +310,15 @@ class TcpTransport(BaseTransport):
         logging.getLogger("oko.tcp").info("TCP TX %s bytes: %s", len(data), data.hex(" "))
         self._socket.sendall(data)
         logging.getLogger("oko.tcp").info("TCP TX completed")
+
+    @pyqtSlot()
+    def _send_keepalive(self) -> None:
+        if self.is_connected:
+            try:
+                self.send_raw(b"VER\r\n")
+                logging.getLogger("oko.tcp").info("TCP keepalive VER sent")
+            except OSError as exc:
+                self.error.emit("Ошибка keepalive: {}".format(exc))
 
     def _start_reader(self) -> None:
         assert self._socket is not None

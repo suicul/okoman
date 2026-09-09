@@ -353,7 +353,7 @@ class Dashboard(QWidget):
 
     def _send_wifi_command(self, command: str) -> None:
         if self._worker.is_connected:
-            self._worker.send_immediate(command)
+            self._worker.send_terminal_command(command)
 
     def _update_scan_status(self, text: str) -> None:
         total = len(AUTO_SCAN_COMMANDS)

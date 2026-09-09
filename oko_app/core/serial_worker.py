@@ -395,6 +395,18 @@ class SerialWorker(QObject):
             self.error.emit("Ошибка отправки: {}".format(exc))
             return False
 
+    def send_terminal_command(self, command: str) -> bool:
+        if not self.send_immediate(command):
+            return False
+        if self._ext_send is not None and self._ext_connected:
+            if command.strip().upper() in {"VER", "SERIAL", "DEBUG ONLY POS", "DEBUG ONLY GSM", "SET"}:
+                QTimer.singleShot(250, self._send_terminal_enter)
+        return True
+
+    def _send_terminal_enter(self) -> None:
+        if self._ext_send is not None and self._ext_connected:
+            self._ext_send(b"\r\n")
+
     def _start_next_command(self) -> None:
         if self._active_request is not None or not self.is_connected:
             return
