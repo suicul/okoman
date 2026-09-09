@@ -377,6 +377,24 @@ class SerialWorker(QObject):
                       owner: str = "") -> int:
         return self.send_command(command, response_kind, timeout_ms, retries, owner)
 
+    def send_immediate(self, command: str) -> bool:
+        """Send a terminal command without waiting for a response."""
+        if not self.is_connected:
+            self.error.emit("Нет подключения")
+            return False
+        try:
+            data = (command.strip() + "\r\n").encode("ascii")
+            if self._ext_send is not None and self._ext_connected:
+                self._ext_send(data)
+            else:
+                assert self._serial is not None
+                self._serial.write(data)
+                self._serial.flush()
+            return True
+        except (serial.SerialException, OSError, UnicodeEncodeError) as exc:
+            self.error.emit("Ошибка отправки: {}".format(exc))
+            return False
+
     def _start_next_command(self) -> None:
         if self._active_request is not None or not self.is_connected:
             return
@@ -488,9 +506,6 @@ class SerialWorker(QObject):
         if stripped == '>>':
             return
 
-        # Эхо CLI вида ">> VER" (ANSI уже снят выше): показываем в терминале
-        # как признак живого линка, но ответом на запрос из очереди
-        # не считаем никогда.
         is_echo = stripped.startswith('>>')
 
         # Check if this is GPS spam - filter from terminal always
@@ -501,6 +516,10 @@ class SerialWorker(QObject):
         is_set_prefix = re.match(r"^SET:\s*", stripped, re.IGNORECASE)
         # Check if this is a key=value pair (settings block)
         is_kv_pair = re.match(r"^\w[\w]*\s*=\s*", stripped) and not is_gps
+
+        if is_echo:
+            self.data_received.emit(stripped)
+            return
 
         if is_gps:
             # GPS lines - parse for dashboard but NEVER emit to terminal
@@ -553,7 +572,6 @@ class SerialWorker(QObject):
             # убежит дальше до прихода даты сборки.
             "ver": (
                 any(kw in line for kw in ("Make:", "make:", "Build", "build"))
-                or re.search(r"\bReady!?\b", line, re.IGNORECASE) is not None
             ),
             "serial": re.search(r"(Serial|SERIAL)[:\s]", line, re.IGNORECASE) is not None,
             "pos": re.search(r"(Lat|Lng|Pos|POS):", line, re.IGNORECASE) is not None,

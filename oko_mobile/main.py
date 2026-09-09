@@ -25,7 +25,12 @@ from kivy.clock import Clock
 from kivymd.app import MDApp
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.screenmanager import MDScreenManager
-from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
+from kivymd.uix.navigationbar import (
+    MDNavigationBar,
+    MDNavigationItem,
+    MDNavigationItemIcon,
+    MDNavigationItemLabel,
+)
 from kivymd.uix.toolbar import MDTopAppBar
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.scrollview import MDScrollView
@@ -1207,6 +1212,7 @@ class OkoMobileApp(MDApp):
         self.transport_kind = "tcp"  # tcp | serial (USB OTG резерв)
         self._response_handler = None
         self._log_path = ""
+        self._rx_buffer = ""
 
     def _configure_logging(self):
         self._log_path = os.path.join(self.user_data_dir, "oko-mobile.log")
@@ -1269,47 +1275,22 @@ class OkoMobileApp(MDApp):
         # Bottom navigation
         layout = MDBoxLayout(orientation="vertical")
 
-        bottom_nav = MDBottomNavigation()
-        bottom_nav.add_widget(
-            MDBottomNavigationItem(
-                name="dashboard_tab",
-                text="Обзор",
-                icon="information",
-            )
-        )
-        bottom_nav.add_widget(
-            MDBottomNavigationItem(
-                name="diagnostics_tab",
-                text="Диагностика",
-                icon="bug-check",
-            )
-        )
-        bottom_nav.add_widget(
-            MDBottomNavigationItem(
-                name="configuration_tab",
-                text="Настройки",
-                icon="cog",
-            )
-        )
-        bottom_nav.add_widget(
-            MDBottomNavigationItem(
-                name="monitor_tab",
-                text="Монитор",
-                icon="chart-line",
-            )
-        )
-        bottom_nav.add_widget(
-            MDBottomNavigationItem(
-                name="terminal_tab",
-                text="Терминал",
-                icon="console",
-            )
-        )
+        bottom_nav = MDNavigationBar()
+        for name, text, icon in (
+            ("dashboard_tab", "Обзор", "information"),
+            ("diagnostics_tab", "Диагностика", "bug-check"),
+            ("configuration_tab", "Настройки", "cog"),
+            ("monitor_tab", "Монитор", "chart-line"),
+            ("terminal_tab", "Терминал", "console"),
+        ):
+            bottom_nav.add_widget(MDNavigationItem(
+                MDNavigationItemIcon(icon=icon),
+                MDNavigationItemLabel(text=text),
+                name=name,
+            ))
 
         # Tab switching
-        bottom_nav.bind(
-            on_tab_switch=lambda instance, tab, tab_text: self._on_tab_switch(tab.name)
-        )
+        bottom_nav.bind(on_switch_tabs=lambda bar, item, icon, text: self._on_tab_switch(item.name))
 
         layout.add_widget(self.sm)
         layout.add_widget(bottom_nav)
@@ -1397,7 +1378,7 @@ class OkoMobileApp(MDApp):
                 self.transport.write(data)
                 self.transport.flush()
             else:
-                self.transport.send(data)
+                self.transport.sendall(data)
         except Exception as e:
             self._show_snackbar(f"Ошибка отправки: {e}")
 
@@ -1413,8 +1394,12 @@ class OkoMobileApp(MDApp):
             else:
                 data = self.transport.recv(4096)
             if data:
-                text = data.decode("utf-8", errors="replace")
-                self._process_response(text)
+                self._rx_buffer += data.decode("utf-8", errors="replace")
+                normalized = self._rx_buffer.replace("\r\n", "\n").replace("\r", "\n")
+                lines = normalized.split("\n")
+                self._rx_buffer = lines.pop()
+                for text in lines:
+                    self._process_response(text)
         except BlockingIOError:
             pass
         except Exception as e:

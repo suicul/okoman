@@ -55,6 +55,19 @@ def test_decoder_exposes_unrecognised_bytes_as_hex() -> None:
     assert "HEX: FF FE 00 80" in decoded
 
 
+def test_ready_banner_does_not_complete_version_request() -> None:
+    worker = SerialWorker()
+    port = WritablePort()
+    worker._serial = port
+    completed: list[str] = []
+    worker.command_completed.connect(
+        lambda request_id, command, response: completed.append(command)
+    )
+    worker.queue_command("VER", "ver")
+    worker._on_line("OKO_001460 Ready!")
+    assert completed == []
+
+
 def test_worker_emits_raw_response_and_parses_serial_number() -> None:
     worker = SerialWorker()
     raw: list[str] = []

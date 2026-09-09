@@ -332,7 +332,28 @@ class Dashboard(QWidget):
         
         self._scan_status.show()
         self._btn_skip_scan.show()
+        if ":" in port:
+            self._start_wifi_poll()
+            return
         self._queue_next_scan(generation)
+
+    def _start_wifi_poll(self) -> None:
+        self._scan_status.setText("WiFi-терминал: отправка диагностических команд")
+        self._scan_progress.setMaximum(5)
+        self._scan_progress.setValue(0)
+        commands = ["VER", "serial", "DEBUG ONLY POS", "DEBUG ONLY GSM", "SET"]
+        for index, command in enumerate(commands, 1):
+            QTimer.singleShot(index * 350, lambda cmd=command: self._send_wifi_command(cmd))
+            QTimer.singleShot(index * 350, lambda value=index: self._scan_progress.setValue(value))
+        QTimer.singleShot(2200, self._finish_scan_report)
+
+    def _send_cmd_string(self, command: str) -> None:
+        if self._worker.is_connected:
+            self._worker.send_command(command)
+
+    def _send_wifi_command(self, command: str) -> None:
+        if self._worker.is_connected:
+            self._worker.send_immediate(command)
 
     def _update_scan_status(self, text: str) -> None:
         total = len(AUTO_SCAN_COMMANDS)
