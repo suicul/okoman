@@ -109,42 +109,43 @@ python oko_mobile/main.py
 
 ## 📦 Сборка
 
-### Desktop
+### Desktop — Windows 7 (релиз 1.0, onefile)
+
+Полевые ноутбуки — Windows 7, собираются **два одиночных EXE** (x86 и x64,
+без установки, без DLL рядом) через GitHub Actions:
+
+- `oko-manager-win7-x64` — для 64-бит Win7 SP1+;
+- `oko-manager-win7-x86` — для 32-бит (работает и на 64-бит).
+
+Запуск: push в `main`/`master`, тег `v*` или вручную (Actions → Build Windows EXE).
+Артефакты лежат 90 дней.
+
+Почему именно так (важно, не менять наугад):
+
+- Python **3.8.10** — последний с поддержкой Win7 (3.9+ требует Windows 8.1+);
+- PyInstaller **5.13.2** — последний с Win7-совместимым bootloader (6.x не стартует на Win7);
+- PyQt5 **5.15.9**, pyserial 3.5 — см. `requirements-win7.txt`.
+
+Локальная сборка для текущей ОС (проверка spec, НЕ для Win7):
 
 ```bash
-# Сборка для текущей платформы
-python build.py
-
-# Сборка с очисткой артефактов
-python build.py --clean
+python build.py          # dist/oko_manager.exe (onefile)
+python build.py --clean  # очистить build/dist
 ```
 
-**Результат:** `dist/oko_manager/`
+### Mobile — Android (релиз 1.0)
 
-### Mobile — Android
+- WiFi — основной канал (ТД платы `OKO_XXXXXX`, `192.168.4.1:1234`);
+- USB OTG — резерв (кнопка на экране подключения).
 
-```bash
-# Сборка APK (требует buildozer и Android SDK)
-python build_mobile.py --android
-```
+APK собирается в CI (buildozer работает только на Linux): Actions →
+Build Android APK. Артефакт `oko-manager-android`, minSdk 21 (Android 5.0).
 
-**Результат:** `dist/*.apk`
-
-#### Предварительная настройка для Android
+Локально (Linux/WSL):
 
 ```bash
-# Установка зависимостей (Ubuntu/Debian)
-sudo apt-get install python3-pip git zip unzip
-sudo apt-get install autoconf libtool pkg-config
-sudo apt-get install openjdk-8-jdk
-
-# Инициализация buildozer
-buildozer init
-
-# Редактирование buildozer.spec при необходимости
-
-# Сборка APK
-buildozer android debug
+pip install "cython==0.29.36" buildozer
+buildozer android debug   # dist/*.apk
 ```
 
 ---
@@ -160,11 +161,12 @@ buildozer android debug
 
 ### Подключение по WiFi
 
-1. Убедитесь, что устройство подключено к той же сети
-2. Переключитесь на "WiFi (TCP)" в панели подключения
-3. Введите IP-адрес устройства (по умолчанию: `192.168.1.100`)
-4. Укажите порт (по умолчанию: `20000`)
-5. Нажмите "Подключить"
+Плата поднимает точку доступа `OKO_XXXXXX` (XXXXXX — серийник платы,
+пароль `222333444`). Подключите ноутбук к этой сети, затем:
+
+1. Переключитесь на "WiFi (TCP)" в панели подключения
+2. IP уже подставлен: `192.168.4.1`, порт `1234`
+3. Нажмите "Подключить" — дальше автоопрос (VER/serial/SET/POS/GSM) идёт сам
 
 ### Конфигурация
 

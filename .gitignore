@@ -6,6 +6,7 @@ build/
 dist/
 *.spec
 !build.spec
+!buildozer.spec
 .venv/
 *.egg-info/
 .pytest_cache/
