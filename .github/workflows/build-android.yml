@@ -1,0 +1,68 @@
+name: Build Android APK
+
+# Мобильная сборка 1.0: buildozer работает только на Linux,
+# поэтому APK собирается здесь (на Windows из build_mobile.py — только help).
+# Артефакт: dist/*.apk (arm64-v8a + armeabi-v7a, minSdk 21).
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Android APK (debug)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (for Android SDK/NDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libtinfo5 cmake \
+            libffi-dev libssl-dev libltdl-dev \
+            python3-pip python3-setuptools
+
+      - name: Install buildozer + pinned cython
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "cython==0.29.36" buildozer
+
+      - name: Accept Android SDK licences
+        run: |
+          mkdir -p ~/.buildozer/android/platform
+          yes | buildozer android debug 2>&1 | tail -5 || true
+        # NOTE: первая попытка только разворачивает SDK (может упасть на
+        # лицензиях) — реальная сборка следующим шагом.
+
+      - name: Patch retired JCenter repository
+        run: |
+          find .buildozer -type f -name '*.gradle' -print0 | xargs -0 sed -i 's/jcenter()/mavenCentral()/g'
+
+      - name: Patch retired JCenter repository
+        run: |
+          find .buildozer -type f -name '*.gradle' -print0 | xargs -0 sed -i 's/jcenter()/mavenCentral()/g'
+
+      - name: Build APK with Buildozer
+        run: |
+          buildozer android debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oko-manager-android
+          path: dist/*.apk
+          retention-days: 90
+          if-no-files-found: error

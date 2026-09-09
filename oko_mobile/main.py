@@ -8,8 +8,10 @@ Secondary: USB serial (via usb4a on Android).
 
 from __future__ import annotations
 
-import sys
+import json
 import os
+import re
+import sys
 
 # Add project root to path for shared core imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -113,6 +115,13 @@ ConnectionScreen:
         spacing: dp(16)
         padding: dp(24)
 
+        Image:
+            source: "oko_icon.png"
+            size_hint_y: None
+            height: dp(96)
+            allow_stretch: True
+            keep_ratio: True
+
         MDLabel:
             text: "ОКО Service Tool"
             font_style: "Headline"
@@ -152,14 +161,28 @@ ConnectionScreen:
                 icon_left: "ethernet"
 
             MDButton:
+                size_hint_y: None
+                height: dp(48)
                 style: "filled"
                 pos_hint: {{"center_x": 0.5}}
                 on_release: root.do_connect()
 
                 MDButtonText:
-                    text: "Подключиться"
+                    text: "Подключиться по WiFi"
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("{BG_PRIMARY}")
+
+            MDButton:
+                size_hint_y: None
+                height: dp(48)
+                style: "outlined"
+                pos_hint: {{"center_x": 0.5}}
+                on_release: root.do_connect_usb()
+
+                MDButtonText:
+                    text: "USB OTG (резерв)"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("{TEXT_ACCENT}")
 
         MDLabel:
             id: status_label
@@ -981,6 +1004,12 @@ class ConnectionScreen(MDScreen):
         if self._app:
             self._app.connect_tcp(ip, port)
 
+    def do_connect_usb(self):
+        self.ids.status_label.text = "Поиск USB (OTG)..."
+        self.ids.status_label.text_color = get_color_from_hex(WARNING)
+        if self._app:
+            self._app.connect_usb_otg()
+
 
 class DashboardScreen(MDScreen):
     """Main dashboard with device status and LED indicators."""
@@ -1074,10 +1103,52 @@ class ConfigurationScreen(MDScreen):
             self._app.send_cmd("SET AS")
 
     def export_config(self):
-        pass  # TODO: file picker
+        """Экспорт: JSON в user_data_dir/oko_config.json (доступен файловым
+        менеджером; на Android не требует разрешений)."""
+        if not self._app:
+            return
+        try:
+            cfg = {
+                "version": "1.0",
+                "gsm": {
+                    "apn": self.ids.apn_field.text.strip(),
+                    "user": self.ids.gsm_user_field.text.strip(),
+                    "password": self.ids.gsm_pass_field.text.strip(),
+                },
+                "mqtt": {"url": self.ids.mqtt_field.text.strip()},
+                "device": {
+                    "volume": self.ids.vol_field.text.strip(),
+                    "registrar": self.ids.rec_field.text.strip(),
+                },
+            }
+            path = os.path.join(self._app.user_data_dir, "oko_config.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2, ensure_ascii=False)
+            self._app._show_snackbar(f"Сохранено: {path}")
+        except Exception as e:
+            self._app._show_snackbar(f"Ошибка экспорта: {e}")
 
     def import_config(self):
-        pass  # TODO: file picker
+        """Импорт: чтение oko_config.json из user_data_dir в поля."""
+        if not self._app:
+            return
+        try:
+            path = os.path.join(self._app.user_data_dir, "oko_config.json")
+            with open(path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            gsm = cfg.get("gsm", {})
+            self.ids.apn_field.text = gsm.get("apn", "")
+            self.ids.gsm_user_field.text = gsm.get("user", "")
+            self.ids.gsm_pass_field.text = gsm.get("password", "")
+            self.ids.mqtt_field.text = cfg.get("mqtt", {}).get("url", "")
+            dev = cfg.get("device", {})
+            self.ids.vol_field.text = str(dev.get("volume", ""))
+            self.ids.rec_field.text = str(dev.get("registrar", ""))
+            self._app._show_snackbar("Конфигурация загружена в поля")
+        except FileNotFoundError:
+            self._app._show_snackbar("Файл oko_config.json не найден")
+        except Exception as e:
+            self._app._show_snackbar(f"Ошибка импорта: {e}")
 
 
 class MonitorScreen(MDScreen):
@@ -1131,6 +1202,7 @@ class OkoMobileApp(MDApp):
 
         # Transport reference (set externally or via connect dialog)
         self.transport = None
+        self.transport_kind = "tcp"  # tcp | serial (USB OTG резерв)
         self._response_handler = None
 
     def build(self):
@@ -1232,13 +1304,14 @@ class OkoMobileApp(MDApp):
             self.sm.current = screen
 
     def connect_tcp(self, ip, port):
-        """Connect via TCP (WiFi)."""
+        """Connect via TCP (WiFi ТД платы OKO_XXXXXX, 192.168.4.1:1234)."""
         try:
             import socket
             self.transport = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.transport.settimeout(10)
             self.transport.connect((ip, port))
             self.transport.setblocking(False)
+            self.transport_kind = "tcp"
 
             self.connection_screen.ids.status_label.text = f"Подключено: {ip}:{port}"
             self.connection_screen.ids.status_label.text_color = get_color_from_hex(SUCCESS)
@@ -1247,26 +1320,73 @@ class OkoMobileApp(MDApp):
 
             # Start receiving
             Clock.schedule_interval(self._receive_data, 0.1)
+            # Автоопрос как на десктопе: версия, серийник, настройки, GPS, GSM.
+            Clock.schedule_once(lambda dt: self.send_cmd("VER"), 0.3)
+            Clock.schedule_once(lambda dt: self.send_cmd("serial"), 0.8)
+            Clock.schedule_once(lambda dt: self.send_cmd("SET"), 1.3)
+            Clock.schedule_once(lambda dt: self.send_cmd("DEBUG ONLY POS"), 1.8)
+            Clock.schedule_once(lambda dt: self.send_cmd("DEBUG ONLY GSM"), 2.3)
 
         except Exception as e:
             self.connection_screen.ids.status_label.text = f"Ошибка: {e}"
             self.connection_screen.ids.status_label.text_color = get_color_from_hex(DANGER)
 
-    def send_cmd(self, cmd):
-        """Send command to device."""
-        if self.transport:
+    def connect_usb_otg(self):
+        """Резервный канал: USB OTG (нужен OTG-кабель; работает там, где ядро
+        отдаёт /dev/ttyUSB* или /dev/ttyACM*)."""
+        try:
+            import serial
+        except ImportError:
+            self.connection_screen.ids.status_label.text = "Нет pyserial в сборке"
+            self.connection_screen.ids.status_label.text_color = get_color_from_hex(DANGER)
+            return
+        for dev in ("/dev/ttyUSB0", "/dev/ttyACM0", "/dev/ttyUSB1"):
+            if not os.path.exists(dev):
+                continue
             try:
-                self.transport.send(f"{cmd}\r\n".encode("utf-8"))
+                ser = serial.Serial(dev, 115200, timeout=0)
+                self.transport = ser
+                self.transport_kind = "serial"
+                self.connection_screen.ids.status_label.text = f"Подключено: {dev}"
+                self.connection_screen.ids.status_label.text_color = get_color_from_hex(SUCCESS)
+                self.sm.current = "dashboard"
+                Clock.schedule_interval(self._receive_data, 0.1)
+                Clock.schedule_once(lambda dt: self.send_cmd("VER"), 0.3)
+                Clock.schedule_once(lambda dt: self.send_cmd("serial"), 0.8)
+                Clock.schedule_once(lambda dt: self.send_cmd("SET"), 1.3)
+                return
             except Exception as e:
-                self._show_snackbar(f"Ошибка отправки: {e}")
+                self._show_snackbar(f"{dev}: {e}")
+        self.connection_screen.ids.status_label.text = "USB-устройство не найдено"
+        self.connection_screen.ids.status_label.text_color = get_color_from_hex(DANGER)
+        self._show_snackbar("Подключите плату OTG-кабелем и разрешите USB")
+
+    def send_cmd(self, cmd):
+        """Send command to device (TCP-сокет или USB-serial)."""
+        if not self.transport:
+            self._show_snackbar("Нет подключения")
+            return
+        try:
+            data = f"{cmd}\r\n".encode("ascii")
+            if self.transport_kind == "serial":
+                self.transport.write(data)
+                self.transport.flush()
+            else:
+                self.transport.send(data)
+        except Exception as e:
+            self._show_snackbar(f"Ошибка отправки: {e}")
 
     def _receive_data(self, dt):
-        """Receive data from device (non-blocking)."""
+        """Receive data from device (non-blocking, TCP и USB)."""
         if not self.transport:
             return
 
         try:
-            data = self.transport.recv(4096)
+            if self.transport_kind == "serial":
+                n = self.transport.in_waiting
+                data = self.transport.read(n) if n else b""
+            else:
+                data = self.transport.recv(4096)
             if data:
                 text = data.decode("utf-8", errors="replace")
                 self._process_response(text)
@@ -1276,44 +1396,97 @@ class OkoMobileApp(MDApp):
             self._show_snackbar(f"Ошибка приёма: {e}")
 
     def _process_response(self, text):
-        """Parse and distribute response to screens."""
-        lines = text.strip().split("\n")
-        for line in lines:
-            line = line.strip()
-            if not line:
+        """Разбор ответов платы (форматы из руководства, разд. 6).
+
+        Примеры живых строк:
+          CMD: MCU: ST Ver: 00242.SUEKKUZ [A7682E] Make: May 15 2025 ...
+          SERIAL: The board serial number is 001479
+          POS: -- RMC ... Lat: ... Lng: ... Vel: ...
+          [GSM] Signal: 18, Errors: 0 / [MQTT] Connected to ...
+          SET: GSM_APN = internet / GSM_APN=internet
+          CAL_OK / CAL_ER, EYES_1..3, FACE_4, PHONE5, SMOKE6
+        """
+        dash = self.dashboard_screen.ids
+        mon = self.monitor_screen.ids
+        for raw in text.replace("\r", "\n").split("\n"):
+            line = raw.strip()
+            if not line or line == ">>":
                 continue
 
-            # Distribute to appropriate screen
-            if line.startswith("VER="):
-                self.dashboard_screen.ids.ver_value.text = line.split("=", 1)[1]
-            elif line.startswith("SERIAL="):
-                self.dashboard_screen.ids.serial_value.text = line.split("=", 1)[1]
-            elif line.startswith("GPS="):
-                self.dashboard_screen.ids.gps_value.text = line.split("=", 1)[1]
-            elif line.startswith("GSM="):
-                self.dashboard_screen.ids.gsm_value.text = line.split("=", 1)[1]
-            elif line.startswith("MQTT="):
-                self.dashboard_screen.ids.mqtt_value.text = line.split("=", 1)[1]
-            elif line.startswith("APN="):
-                self.dashboard_screen.ids.apn_value.text = line.split("=", 1)[1]
-            elif line.startswith("REC="):
-                self.dashboard_screen.ids.rec_value.text = line.split("=", 1)[1]
-            elif line.startswith("LAT="):
-                self.monitor_screen.ids.lat_value.text = line.split("=", 1)[1]
-            elif line.startswith("LON="):
-                self.monitor_screen.ids.lon_value.text = line.split("=", 1)[1]
-            elif line.startswith("SATS="):
-                self.monitor_screen.ids.sats_value.text = line.split("=", 1)[1]
-            elif line.startswith("OPERATOR="):
-                self.monitor_screen.ids.operator_value.text = line.split("=", 1)[1]
-            elif line.startswith("SIGNAL="):
-                self.monitor_screen.ids.signal_value.text = line.split("=", 1)[1]
-            elif line.startswith("SIM="):
-                self.monitor_screen.ids.sim_value.text = line.split("=", 1)[1]
-            elif line.startswith("CAL_"):
-                self.diagnostics_screen.ids.hw_status.text = line
-            elif "OK" in line or "ERROR" in line:
-                self.terminal_screen.ids.terminal_output.text += f"\n> {line}"
+            ver = re.search(r"(?:Ver|ver|Version|Firmware Version):\s*(\S+)", line)
+            if ver:
+                make = re.search(r"Make:\s*(.+?)(?:\s*\]|$)", line)
+                v = ver.group(1)
+                if make:
+                    v = "{} ({})".format(v, make.group(1).strip())
+                dash.ver_value.text = v
+                self._term_log("< {}".format(line))
+                continue
+
+            serial_m = re.search(r"[Ss][Ee][Rr][Ii][Aa][Ll][^0-9]*([0-9]+)", line)
+            if serial_m and ("serial" in line.lower() or "SERIAL" in line):
+                dash.serial_value.text = serial_m.group(1)
+                continue
+
+            if re.search(r"POS:\s*--\s*RMC", line, re.IGNORECASE):
+                gps = {}
+                for key in ("Time", "Date", "Lat", "Lng", "Vel"):
+                    m = re.search(r"{}:\s*([^|]+)".format(key), line, re.IGNORECASE)
+                    if m:
+                        gps[key.lower()] = m.group(1).strip()
+                if gps:
+                    dash.gps_value.text = "{}, {}".format(
+                        gps.get("lat", "—"), gps.get("lng", "—"))
+                    mon.lat_value.text = gps.get("lat", "—")
+                    mon.lon_value.text = gps.get("lng", "—")
+                continue
+
+            gsm_m = re.search(r"Signal:\s*(\d+)", line, re.IGNORECASE)
+            if gsm_m:
+                dash.gsm_value.text = "{}/31".format(gsm_m.group(1))
+                mon.signal_value.text = gsm_m.group(1)
+                mqtt_m = re.search(r"MQTT[:\]]?\s*(.*)", line, re.IGNORECASE)
+                if mqtt_m and mqtt_m.group(1).strip():
+                    dash.mqtt_value.text = mqtt_m.group(1).strip()
+                continue
+
+            kv = re.match(r"^(?:SET:\s*)?(.+?)\s*=\s*(.+)$", line, re.IGNORECASE)
+            if kv:
+                key, val = kv.group(1).strip(), kv.group(2).strip()
+                lk = key.lower()
+                if "apn" in lk:
+                    dash.apn_value.text = val
+                elif "mqtt" in lk:
+                    dash.mqtt_value.text = val
+                elif lk in ("reg", "rec"):
+                    dash.rec_value.text = val
+                continue
+
+            if "CAL_OK" in line:
+                self.diagnostics_screen.ids.hw_status.text = "Калибровка: успех"
+                self._show_snackbar("Калибровка успешно завершена")
+                continue
+            if "CAL_ER" in line:
+                self.diagnostics_screen.ids.hw_status.text = "Калибровка: ошибка"
+                self._show_snackbar("Ошибка калибровки — повторите")
+                continue
+
+            if re.search(r"EYES|FACE|PHONE|SMOKE|Button pressed", line, re.IGNORECASE):
+                self._term_log("< {}".format(line))
+                continue
+
+            if "TEST" in line or "TST:" in line:
+                self.diagnostics_screen.ids.hw_status.text = line[:120]
+                continue
+
+            self._term_log("< {}".format(line))
+
+    def _term_log(self, text):
+        try:
+            out = self.terminal_screen.ids.terminal_output
+            out.text = (out.text + "\n" + text)[-4000:]
+        except Exception:
+            pass
 
     def _show_snackbar(self, message):
         """Show a brief notification."""
