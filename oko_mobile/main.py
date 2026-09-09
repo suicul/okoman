@@ -9,9 +9,11 @@ Secondary: USB serial (via usb4a on Android).
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import sys
+import traceback
 
 # Add project root to path for shared core imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -1204,8 +1206,31 @@ class OkoMobileApp(MDApp):
         self.transport = None
         self.transport_kind = "tcp"  # tcp | serial (USB OTG резерв)
         self._response_handler = None
+        self._log_path = ""
+
+    def _configure_logging(self):
+        self._log_path = os.path.join(self.user_data_dir, "oko-mobile.log")
+        os.makedirs(self.user_data_dir, exist_ok=True)
+        logging.basicConfig(
+            filename=self._log_path,
+            level=logging.DEBUG,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+        )
+        logging.info("Starting OKO Service Tool; python=%s", sys.version)
+        logging.info("argv=%r", sys.argv)
+
+        def exception_hook(exc_type, exc_value, exc_traceback):
+            logging.critical(
+                "Unhandled exception:\n%s",
+                "".join(traceback.format_exception(exc_type, exc_value, exc_traceback)),
+            )
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+        sys.excepthook = exception_hook
 
     def build(self):
+        self._configure_logging()
+        logging.info("Building mobile UI")
         self.load_kv_string(KVStyleSheet)
         self.load_kv_string(KV_CONNECTION)
         self.load_kv_string(KV_DASHBOARD)
@@ -1509,6 +1534,7 @@ class OkoMobileApp(MDApp):
         self.connection_screen.ids.status_label.text_color = get_color_from_hex(TEXT_SECONDARY)
 
     def on_stop(self):
+        logging.info("Stopping application")
         self.disconnect()
 
 

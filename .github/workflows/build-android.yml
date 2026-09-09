@@ -51,10 +51,6 @@ jobs:
         run: |
           find .buildozer -type f -name '*.gradle' -print0 | xargs -0 sed -i 's/jcenter()/mavenCentral()/g'
 
-      - name: Patch retired JCenter repository
-        run: |
-          find .buildozer -type f -name '*.gradle' -print0 | xargs -0 sed -i 's/jcenter()/mavenCentral()/g'
-
       - name: Build APK with Buildozer
         run: |
           buildozer android debug
