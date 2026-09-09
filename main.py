@@ -48,6 +48,7 @@ if "ANDROID_ARGUMENT" in os.environ:
             _android_boot_log("APP FAILED:\n{}".format(traceback.format_exc()))
             raise
 else:
+    import logging
     from PyQt5.QtWidgets import QApplication, QMessageBox
 
     from oko_app import __version__
@@ -77,7 +78,9 @@ else:
         sys.excepthook = exception_hook
 
         # Initialize logger
-        OkoLogger.init()
+        log_path = os.path.join(os.path.expanduser("~"), "oko-manager.log")
+        OkoLogger.init(log_file=log_path)
+        logging.getLogger("oko").info("Desktop application started")
 
         app = QApplication(sys.argv)
         app.setApplicationName("ОКО БОД Manager")

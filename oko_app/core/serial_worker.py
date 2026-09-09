@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import time
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Optional, NamedTuple
@@ -398,6 +399,12 @@ class SerialWorker(QObject):
             self._pending_gps = {}
         try:
             data = (request.command + "\r\n").encode("ascii")
+            logging.getLogger("oko.command").info(
+                "SEND command=%r bytes=%s external=%s",
+                request.command,
+                data.hex(" "),
+                self._ext_send is not None,
+            )
             if self._ext_send is not None and self._ext_connected:
                 self._ext_send(data)  # WiFi/TCP тракт
             else:
@@ -410,6 +417,12 @@ class SerialWorker(QObject):
             self._finish_active(False, "Ошибка отправки: {}".format(exc))
 
     def _on_command_timeout(self) -> None:
+        if self._active_request is not None:
+            logging.getLogger("oko.command").warning(
+                "TIMEOUT command=%r attempt=%s",
+                self._active_request.command,
+                self._active_attempt,
+            )
         request = self._active_request
         if request is None:
             return

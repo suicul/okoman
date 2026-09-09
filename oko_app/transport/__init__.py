@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import socket
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional
@@ -261,6 +262,7 @@ class TcpTransport(BaseTransport):
             self._socket.connect((address, port))
             self._socket.settimeout(1.0)
             self._is_connected = True
+            logging.getLogger("oko.tcp").info("TCP connected to %s:%s", address, port)
             self._start_reader()
             self.connected.emit(f"{address}:{port}")
         except Exception as exc:
@@ -295,7 +297,9 @@ class TcpTransport(BaseTransport):
         """Отправить готовые байты (мост для SerialWorker)."""
         if not self.is_connected or not self._socket:
             raise OSError("Нет подключения")
+        logging.getLogger("oko.tcp").info("TCP TX %s bytes: %s", len(data), data.hex(" "))
         self._socket.sendall(data)
+        logging.getLogger("oko.tcp").info("TCP TX completed")
 
     def _start_reader(self) -> None:
         assert self._socket is not None
@@ -310,10 +314,12 @@ class TcpTransport(BaseTransport):
 
     @pyqtSlot(str)
     def _on_reader_line(self, line: str) -> None:
+        logging.getLogger("oko.tcp").info("TCP RX: %s", line)
         self._emit_data(line)
 
     @pyqtSlot(str)
     def _on_reader_error(self, message: str) -> None:
+        logging.getLogger("oko.tcp").error("TCP reader error: %s", message)
         self.error.emit(message)
         if self.is_connected:
             self.disconnect()
