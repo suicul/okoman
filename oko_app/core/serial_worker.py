@@ -488,6 +488,11 @@ class SerialWorker(QObject):
         if stripped == '>>':
             return
 
+        # Эхо CLI вида ">> VER" (ANSI уже снят выше): показываем в терминале
+        # как признак живого линка, но ответом на запрос из очереди
+        # не считаем никогда.
+        is_echo = stripped.startswith('>>')
+
         # Check if this is GPS spam - filter from terminal always
         is_gps = re.search(r"POS:\s*--\s*RMC", stripped, re.IGNORECASE)
         # Check if this is the SET block end marker
@@ -546,7 +551,10 @@ class SerialWorker(QObject):
             # VER из двух строк: «Firmware Version: X» + «Build Date: ...» —
             # завершаем по строке со сборкой (Make:/Build), иначе очередь
             # убежит дальше до прихода даты сборки.
-            "ver": any(kw in line for kw in ("Make:", "make:", "Build", "build")),
+            "ver": (
+                any(kw in line for kw in ("Make:", "make:", "Build", "build"))
+                or re.search(r"\bReady!?\b", line, re.IGNORECASE) is not None
+            ),
             "serial": re.search(r"(Serial|SERIAL)[:\s]", line, re.IGNORECASE) is not None,
             "pos": re.search(r"(Lat|Lng|Pos|POS):", line, re.IGNORECASE) is not None,
             "gsm": re.search(r"Signal:\s*\d+", line, re.IGNORECASE) is not None,

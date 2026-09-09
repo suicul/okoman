@@ -190,6 +190,7 @@ class _TcpReader(QThread):
 
     def run(self) -> None:
         buf = b""
+        log = logging.getLogger("oko.tcp")
         try:
             while self._running:
                 try:
@@ -202,13 +203,17 @@ class _TcpReader(QThread):
                 if not chunk:
                     self.read_error.emit("Устройство закрыло WiFi-соединение")
                     break
-                buf += chunk
+                # Сырой дамп: какой бы EOL ни слала прошивка (\r\n, \n или
+                # голый \r), по hex видно реальный формат строк.
+                log.debug("TCP RX raw %d bytes: %s", len(chunk), chunk.hex(" "))
+                # Нормализация окончаний: \r\n и голый \r → \n, чтобы ответы
+                # с \r без \n не застревали в буфере навсегда.
+                buf += chunk.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
                 while b"\n" in buf:
                     raw, buf = buf.split(b"\n", 1)
-                    if raw.endswith(b"\r"):
-                        raw = raw[:-1]
                     line = raw.decode("utf-8", errors="replace").strip()
                     if line:
+                        log.debug("TCP RX line hex: %s", raw.hex(" "))
                         self.line_ready.emit(line)
         finally:
             if buf:
@@ -344,11 +349,9 @@ class TcpTransport(BaseTransport):
     def parse_line(self, data: bytes) -> list[str]:
         """Parse lines from TCP data (handles \\r\\n, \\r, \\n)."""
         lines = []
-        self._read_buffer += data
+        self._read_buffer += data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         while b"\n" in self._read_buffer:
             line_bytes, self._read_buffer = self._read_buffer.split(b"\n", 1)
-            if line_bytes.endswith(b"\r"):
-                line_bytes = line_bytes[:-1]
             line = line_bytes.decode("utf-8", errors="replace").strip()
             if line:
                 lines.append(line)
