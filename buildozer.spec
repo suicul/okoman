@@ -66,7 +66,7 @@ android.ndk = 25b
 #android.private_storage = True
 
 # (list) The Android permissions in the manifest. net + wifi-state for WiFi tool.
-android.permissions = INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE
+android.permissions = INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
 
 # (int) Android logcat filters to use
 #android.logcat_filters = *:S python:D

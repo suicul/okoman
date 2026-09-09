@@ -8,15 +8,46 @@ Entry point for the OKO Device Manager application.
 
 import os
 import sys
+import traceback
+
+
+def _android_boot_log(message: str) -> None:
+    if "ANDROID_ARGUMENT" not in os.environ:
+        return
+    line = "{}\n".format(message)
+    paths = [
+        os.path.join(os.environ.get("ANDROID_PRIVATE", "."), "oko-startup.log"),
+        "/sdcard/Download/oko-startup.log",
+    ]
+    for path in paths:
+        try:
+            directory = os.path.dirname(path)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+            with open(path, "a", encoding="utf-8") as log_file:
+                log_file.write(line)
+        except (OSError, UnicodeError):
+            continue
+
+
+_android_boot_log("ENTRYPOINT: main.py loaded")
 
 if "ANDROID_ARGUMENT" in os.environ:
-    from oko_mobile.main import OkoMobileApp
+    _android_boot_log("IMPORT: oko_mobile.main")
+    try:
+        from oko_mobile.main import OkoMobileApp
+    except BaseException:
+        _android_boot_log("IMPORT FAILED:\n{}".format(traceback.format_exc()))
+        raise
 
     def main() -> None:
-        OkoMobileApp().run()
+        _android_boot_log("APP: constructing OkoMobileApp")
+        try:
+            OkoMobileApp().run()
+        except BaseException:
+            _android_boot_log("APP FAILED:\n{}".format(traceback.format_exc()))
+            raise
 else:
-    import traceback
-
     from PyQt5.QtWidgets import QApplication, QMessageBox
 
     from oko_app import __version__
