@@ -145,6 +145,7 @@ class Configuration(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
 
         header = QLabel("Конфигурация")
+        header.setAccessibleName("Экран конфигурации")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
@@ -169,6 +170,8 @@ class Configuration(QWidget):
         gsm_btn_row = QHBoxLayout()
         gsm_btn_row.addStretch()
         self._btn_apply_gsm = QPushButton("Применить GSM")
+        self._btn_apply_gsm.setMinimumHeight(36)
+        self._btn_apply_gsm.setAccessibleName("Применить настройки GSM")
         self._btn_apply_gsm.setObjectName("primaryButton")
         self._btn_apply_gsm.clicked.connect(self._apply_gsm)
         gsm_btn_row.addWidget(self._btn_apply_gsm)
@@ -188,6 +191,8 @@ class Configuration(QWidget):
         mqtt_btn_row = QHBoxLayout()
         mqtt_btn_row.addStretch()
         self._btn_apply_mqtt = QPushButton("Применить MQTT")
+        self._btn_apply_mqtt.setMinimumHeight(36)
+        self._btn_apply_mqtt.setAccessibleName("Применить настройки MQTT")
         self._btn_apply_mqtt.setObjectName("primaryButton")
         self._btn_apply_mqtt.clicked.connect(self._apply_mqtt)
         mqtt_btn_row.addWidget(self._btn_apply_mqtt)
@@ -207,6 +212,7 @@ class Configuration(QWidget):
         vol_row.addWidget(vol_label)
 
         self._spin_volume = QDoubleSpinBox()
+        self._spin_volume.setAccessibleName("Громкость динамика")
         self._spin_volume.setRange(0.0, 1.0)
         self._spin_volume.setSingleStep(0.1)
         self._spin_volume.setValue(0.7)
@@ -227,6 +233,7 @@ class Configuration(QWidget):
         reg_row.addWidget(reg_label)
 
         self._combo_reg = QComboBox()
+        self._combo_reg.setAccessibleName("Тип регистратора")
         self._combo_reg.addItems(["4 канала", "8 каналов"])
         self._combo_reg.setFixedWidth(140)
         reg_row.addWidget(self._combo_reg)
@@ -245,6 +252,7 @@ class Configuration(QWidget):
         gps_row.addWidget(gps_label)
 
         self._combo_gps = QComboBox()
+        self._combo_gps.setAccessibleName("Режим GPS")
         self._combo_gps.addItems(["GNSS", "GLONASS"])
         self._combo_gps.setFixedWidth(140)
         gps_row.addWidget(self._combo_gps)
@@ -262,12 +270,17 @@ class Configuration(QWidget):
         save_layout = QHBoxLayout(save_card)
         save_layout.setContentsMargins(16, 12, 16, 12)
 
-        save_info = QLabel("Сохраняет настройки в EEPROM (постоянную память)")
+        save_info = QLabel(
+            "«Применить» пишет в память платы, но НЕ сохраняет! "
+            "Нажмите «Сохранить всё (SET AS)» для записи в EEPROM."
+        )
         save_info.setStyleSheet("color: #ffbb33; font-size: 11px;")
         save_layout.addWidget(save_info)
         save_layout.addStretch()
 
         self._btn_save = QPushButton("Сохранить всё (SET AS)")
+        self._btn_save.setMinimumHeight(40)
+        self._btn_save.setAccessibleName("Сохранить все настройки в EEPROM")
         self._btn_save.setObjectName("primaryButton")
         self._btn_save.clicked.connect(self._save_all)
         save_layout.addWidget(self._btn_save)
@@ -285,11 +298,15 @@ class Configuration(QWidget):
 
         io_btn_row = QHBoxLayout()
 
-        self._btn_export = QPushButton("📤 Экспорт в JSON")
+        self._btn_export = QPushButton("Экспорт в JSON")
+        self._btn_export.setMinimumHeight(36)
+        self._btn_export.setAccessibleName("Экспортировать настройки в JSON")
         self._btn_export.clicked.connect(self._export_config)
         io_btn_row.addWidget(self._btn_export)
 
-        self._btn_import = QPushButton("📥 Импорт из JSON")
+        self._btn_import = QPushButton("Импорт из JSON")
+        self._btn_import.setMinimumHeight(36)
+        self._btn_import.setAccessibleName("Импортировать настройки из JSON")
         self._btn_import.clicked.connect(self._import_config)
         io_btn_row.addWidget(self._btn_import)
 
@@ -307,10 +324,13 @@ class Configuration(QWidget):
         view_layout.addWidget(view_title)
 
         self._btn_view_settings = QPushButton("Запросить настройки (SET)")
+        self._btn_view_settings.setMinimumHeight(36)
+        self._btn_view_settings.setAccessibleName("Запросить текущие настройки устройства")
         self._btn_view_settings.clicked.connect(self._view_settings)
         view_layout.addWidget(self._btn_view_settings)
 
         self._cfg_status = QLabel("")
+        self._cfg_status.setAccessibleName("Статус конфигурации")
         self._cfg_status.setStyleSheet("color: #8b949e; font-size: 11px;")
         view_layout.addWidget(self._cfg_status)
 
@@ -355,10 +375,10 @@ class Configuration(QWidget):
         self._cfg_pending.discard(request_id)
         if not self._cfg_pending:
             self._set_busy(False)
-            self._cfg_status.setText("Настройки обновлены")
+            self._cfg_status.setText("Применено в память платы. Не забудьте «Сохранить всё (SET AS)»!")
             # Show toast notification
             if "SET" in command.upper():
-                self._show_toast("Настройки применены", "success")
+                self._show_toast("Применено в плату (без SET AS не сохранится)", "success")
             else:
                 self._show_toast("Операция завершена", "info")
 

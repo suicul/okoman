@@ -40,6 +40,21 @@ QWidget {{
     font-size: 13px;
 }}
 
+QScrollArea {{
+    background-color: {BG_PRIMARY};
+    border: none;
+}}
+
+QRadioButton, QCheckBox {{
+    spacing: 8px;
+    min-height: 28px;
+}}
+
+QRadioButton::indicator, QCheckBox::indicator {{
+    width: 16px;
+    height: 16px;
+}}
+
 /* ── Main Window ────────────────────────────────────────────────────────── */
 QMainWindow {{
     background-color: {BG_PRIMARY};
@@ -49,8 +64,8 @@ QMainWindow {{
 #sidebar {{
     background-color: {BG_SECONDARY};
     border-right: 1px solid {BORDER};
-    min-width: 220px;
-    max-width: 300px;
+    min-width: 208px;
+    max-width: 208px;
 }}
 
 #sidebar QPushButton {{
@@ -58,10 +73,11 @@ QMainWindow {{
     color: {TEXT_SECONDARY};
     border: none;
     border-left: 3px solid transparent;
-    padding: 14px 16px;
+    padding: 10px 12px;
     text-align: left;
     font-size: 13px;
     font-weight: 500;
+    min-height: 20px;
 }}
 
 #sidebar QPushButton:hover {{
@@ -91,12 +107,17 @@ QMainWindow {{
     letter-spacing: 0.5px;
 }}
 
+#appLogo {{
+    background: transparent;
+    padding: 4px;
+}}
+
 /* ── Cards / Panels ────────────────────────────────────────────────────── */
 #card {{
     background-color: {BG_SECONDARY};
     border: 1px solid {BORDER};
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 8px;
+    padding: 16px;
 }}
 
 #cardTitle {{
@@ -112,14 +133,27 @@ QPushButton {{
     color: {TEXT_PRIMARY};
     border: 1px solid {BORDER};
     border-radius: 8px;
-    padding: 8px 20px;
+    padding: 8px 16px;
     font-weight: 500;
     min-height: 20px;
+}}
+
+QPushButton:focus, QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
+QComboBox:focus, QRadioButton:focus, QCheckBox:focus {{
+    outline: none;
+    border-color: {ACCENT};
 }}
 
 QPushButton:hover {{
     background-color: {BORDER};
     border-color: {BORDER_ACCENT};
+}}
+
+QPushButton:focus, QLineEdit:focus, QSpinBox:focus,
+QDoubleSpinBox:focus, QComboBox:focus, QTextEdit:focus,
+QRadioButton:focus, QCheckBox:focus {{
+    outline: none;
+    border-color: {ACCENT};
 }}
 
 QPushButton:pressed {{
@@ -215,7 +249,7 @@ QTextEdit {{
 QGroupBox {{
     background-color: {BG_SECONDARY};
     border: 1px solid {BORDER};
-    border-radius: 10px;
+    border-radius: 8px;
     margin-top: 14px;
     padding: 16px 12px 12px 12px;
     font-weight: 600;

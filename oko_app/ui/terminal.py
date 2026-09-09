@@ -39,6 +39,7 @@ class Terminal(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
 
         header = QLabel("Терминал")
+        header.setAccessibleName("Экран терминала")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
@@ -47,6 +48,7 @@ class Terminal(QWidget):
         output_layout = QVBoxLayout(output_card)
 
         self._output = QTextEdit()
+        self._output.setAccessibleName("Вывод терминала")
         self._output.setReadOnly(True)
         self._output.setMinimumHeight(300)
         output_layout.addWidget(self._output)
@@ -66,6 +68,7 @@ class Terminal(QWidget):
         cmd_row.setSpacing(8)
 
         self._combo_commands = QComboBox()
+        self._combo_commands.setAccessibleName("Быстрые команды терминала")
         self._combo_commands.setMinimumWidth(300)
         for cmd in ALL_COMMANDS:
             self._combo_commands.addItem(
@@ -74,11 +77,13 @@ class Terminal(QWidget):
         cmd_row.addWidget(self._combo_commands)
 
         self._param_input = QLineEdit()
+        self._param_input.setAccessibleName("Параметр быстрой команды")
         self._param_input.setPlaceholderText("Параметр (если нужен)")
         self._param_input.setMinimumWidth(200)
         cmd_row.addWidget(self._param_input)
 
         self._btn_send_helper = QPushButton("Отправить")
+        self._btn_send_helper.setMinimumHeight(36)
         self._btn_send_helper.setObjectName("primaryButton")
         self._btn_send_helper.clicked.connect(self._send_helper_command)
         cmd_row.addWidget(self._btn_send_helper)
@@ -100,16 +105,20 @@ class Terminal(QWidget):
         input_layout.setSpacing(8)
 
         self._input = QLineEdit()
+        self._input.setAccessibleName("Команда терминала")
         self._input.setPlaceholderText("Введите команду и нажмите Enter...")
         self._input.returnPressed.connect(self._send_raw)
         input_layout.addWidget(self._input)
 
         self._btn_send = QPushButton("Отправить")
+        self._btn_send.setMinimumHeight(36)
         self._btn_send.setObjectName("primaryButton")
         self._btn_send.clicked.connect(self._send_raw)
         input_layout.addWidget(self._btn_send)
 
         self._btn_clear = QPushButton("Очистить")
+        self._btn_clear.setMinimumHeight(36)
+        self._btn_clear.setAccessibleName("Очистить вывод терминала")
         self._btn_clear.clicked.connect(self._clear_output)
         input_layout.addWidget(self._btn_clear)
 

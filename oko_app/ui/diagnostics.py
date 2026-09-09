@@ -37,17 +37,20 @@ class TestResultCard(QFrame):
         layout.setContentsMargins(16, 10, 16, 10)
 
         self._name = QLabel(name)
+        self._name.setAccessibleName("Название теста: {}".format(name))
         self._name.setStyleSheet("font-size: 13px; font-weight: 600;")
         self._name.setFixedWidth(180)
         layout.addWidget(self._name)
 
         self._status = QLabel("Ожидание")
+        self._status.setAccessibleName("Статус теста: {}".format(name))
         self._status.setStyleSheet("color: #8b949e; font-size: 12px;")
         layout.addWidget(self._status)
 
         layout.addStretch()
 
         self._result = QLabel("—")
+        self._result.setAccessibleName("Результат теста: {}".format(name))
         self._result.setStyleSheet("color: #8b949e; font-size: 12px;")
         self._result.setMinimumWidth(150)
         layout.addWidget(self._result)
@@ -94,6 +97,7 @@ class Diagnostics(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
 
         header = QLabel("Диагностика")
+        header.setAccessibleName("Экран диагностики")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
@@ -110,22 +114,28 @@ class Diagnostics(QWidget):
         btn_row.setSpacing(8)
 
         self._btn_hw_test = QPushButton("Тест аппаратуры")
+        self._btn_hw_test.setMinimumHeight(36)
+        self._btn_hw_test.setToolTip("Запустить проверку аппаратуры")
         self._btn_hw_test.clicked.connect(self._test_hw)
         btn_row.addWidget(self._btn_hw_test)
 
         self._btn_led_test = QPushButton("Тест LED")
+        self._btn_led_test.setMinimumHeight(36)
         self._btn_led_test.clicked.connect(self._test_led)
         btn_row.addWidget(self._btn_led_test)
 
         self._btn_led_off = QPushButton("LED OFF")
+        self._btn_led_off.setMinimumHeight(36)
         self._btn_led_off.clicked.connect(self._led_off)
         btn_row.addWidget(self._btn_led_off)
 
         self._btn_debug_mode = QPushButton("TEST ON")
+        self._btn_debug_mode.setMinimumHeight(36)
         self._btn_debug_mode.clicked.connect(self._toggle_debug)
         btn_row.addWidget(self._btn_debug_mode)
 
         self._btn_debug_off = QPushButton("TEST OFF")
+        self._btn_debug_off.setMinimumHeight(36)
         self._btn_debug_off.clicked.connect(self._disable_debug)
         btn_row.addWidget(self._btn_debug_off)
 
@@ -138,19 +148,37 @@ class Diagnostics(QWidget):
         spk_layout = QVBoxLayout(spk_card)
         spk_layout.setSpacing(10)
 
-        spk_title = QLabel("Тест динамика")
+        spk_title = QLabel("Тест динамика (звуки 0–13 по руководству, разд. 6.4)")
         spk_title.setObjectName("cardTitle")
         spk_layout.addWidget(spk_title)
 
-        spk_row = QHBoxLayout()
-        spk_row.setSpacing(6)
-        for i in range(6):
+        spk_hint = QLabel("0 — тихий бип, 5 — «Тревога». SPK B — короткий тест-бип.")
+        spk_hint.setStyleSheet("color: #8b949e; font-size: 11px;")
+        spk_layout.addWidget(spk_hint)
+
+        spk_row1 = QHBoxLayout()
+        spk_row1.setSpacing(6)
+        for i in range(7):
             btn = QPushButton(str(i))
-            btn.setFixedWidth(44)
+            btn.setMinimumSize(44, 36)
             btn.clicked.connect(lambda _, n=i: self._spk_test(n))
-            spk_row.addWidget(btn)
-        spk_row.addStretch()
-        spk_layout.addLayout(spk_row)
+            spk_row1.addWidget(btn)
+        spk_row1.addStretch()
+        spk_layout.addLayout(spk_row1)
+
+        spk_row2 = QHBoxLayout()
+        spk_row2.setSpacing(6)
+        for i in range(7, 14):
+            btn = QPushButton(str(i))
+            btn.setMinimumSize(44, 36)
+            btn.clicked.connect(lambda _, n=i: self._spk_test(n))
+            spk_row2.addWidget(btn)
+        self._btn_spk_b = QPushButton("SPK B")
+        self._btn_spk_b.setToolTip("Короткий тест-бип (для диагностики из руководства)")
+        self._btn_spk_b.clicked.connect(lambda: self._send_raw("SPK B"))
+        spk_row2.addWidget(self._btn_spk_b)
+        spk_row2.addStretch()
+        spk_layout.addLayout(spk_row2)
         main_layout.addWidget(spk_card)
 
         out_card = QFrame()

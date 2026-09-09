@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
 
 from ..core.serial_worker import SerialWorker, PortInfo
 from ..core.permissions import check_serial_permissions, try_apply_fix
+from ..core.constants import WIFI_DEFAULT_IP, WIFI_DEFAULT_PORT
 from ..transport import TcpTransport, TransportType
 
 
@@ -59,7 +60,8 @@ class ConnectionPanel(QWidget):
         status_row.addWidget(self._dot)
 
         self._status_label = QLabel("Не подключено")
-        self._status_label.setStyleSheet("color: #8b949e; font-size: 11px;")
+        self._status_label.setAccessibleName("Статус подключения")
+        self._status_label.setStyleSheet("color: #8b949e; font-size: 12px;")
         status_row.addWidget(self._status_label)
         status_row.addStretch()
 
@@ -73,6 +75,8 @@ class ConnectionPanel(QWidget):
 
         self._radio_usb = QRadioButton("USB")
         self._radio_wifi = QRadioButton("WiFi")
+        self._radio_usb.setAccessibleName("Подключение по USB")
+        self._radio_wifi.setAccessibleName("Подключение по WiFi")
         self._radio_usb.setChecked(True)
 
         self._transport_group = QButtonGroup(self)
@@ -95,6 +99,7 @@ class ConnectionPanel(QWidget):
         port_layout.setSpacing(4)
 
         self._port_combo = QComboBox()
+        self._port_combo.setAccessibleName("COM-порт устройства")
         self._port_combo.setPlaceholderText("COM порт...")
         self._port_combo.setStyleSheet("font-size: 11px;")
         port_layout.addWidget(self._port_combo)
@@ -109,14 +114,16 @@ class ConnectionPanel(QWidget):
 
         wifi_row1 = QHBoxLayout()
         self._wifi_address = QLineEdit()
-        self._wifi_address.setPlaceholderText("IP-адрес устройства")
-        self._wifi_address.setText("192.168.1.100")
+        self._wifi_address.setAccessibleName("IP-адрес устройства")
+        self._wifi_address.setPlaceholderText("IP-адрес устройства (ТД OKO_XXXXXX)")
+        self._wifi_address.setText(WIFI_DEFAULT_IP)
         self._wifi_address.setStyleSheet("font-size: 11px;")
         wifi_row1.addWidget(self._wifi_address)
 
         self._wifi_port_spin = QSpinBox()
+        self._wifi_port_spin.setAccessibleName("TCP-порт устройства")
         self._wifi_port_spin.setRange(1, 65535)
-        self._wifi_port_spin.setValue(20000)
+        self._wifi_port_spin.setValue(WIFI_DEFAULT_PORT)
         self._wifi_port_spin.setFixedWidth(70)
         self._wifi_port_spin.setSuffix(" :port")
         self._wifi_port_spin.setStyleSheet("font-size: 11px;")
@@ -131,13 +138,16 @@ class ConnectionPanel(QWidget):
         btn_row.setSpacing(4)
 
         self._refresh_btn = QPushButton("\u27f3")
-        self._refresh_btn.setFixedSize(28, 28)
+        self._refresh_btn.setFixedSize(36, 36)
         self._refresh_btn.setToolTip("Обновить")
         self._refresh_btn.clicked.connect(self._scan_ports)
         btn_row.addWidget(self._refresh_btn)
 
         self._connect_btn = QPushButton("Подключить")
+        self._connect_btn.setAccessibleName("Подключить или отключить устройство")
         self._connect_btn.setObjectName("primaryButton")
+        self._connect_btn.setMinimumHeight(36)
+        self._connect_btn.setStyleSheet("font-size: 13px;")
         self._connect_btn.clicked.connect(self._toggle_connection)
         btn_row.addWidget(self._connect_btn)
 
@@ -164,10 +174,13 @@ class ConnectionPanel(QWidget):
         self._worker.version_info.connect(self._on_version)
         self._worker.permission_error.connect(self._on_permission_error)
 
-        # WiFi signals
+        # WiFi signals: строки TCP уходят в общий парсер SerialWorker,
+        # очередь команд тоже общая (attach_external) — Dashboard, конфиг,
+        # диагностика и терминал работают одинаково для USB и WiFi.
         self._tcp_worker.connected.connect(self._on_tcp_connected)
         self._tcp_worker.disconnected.connect(self._on_tcp_disconnected)
         self._tcp_worker.error.connect(self._on_tcp_error)
+        self._tcp_worker.data_received.connect(self._worker.on_external_line)
 
     def _on_transport_changed(self) -> None:
         """Switch between USB and WiFi transport."""
@@ -215,7 +228,8 @@ class ConnectionPanel(QWidget):
         self._port_combo.blockSignals(False)
 
     def _on_scan_tick(self) -> None:
-        if self._worker.is_connected or self._auto_connecting:
+        if (self._worker.is_connected or self._auto_connecting
+                or self._tcp_worker.is_connected):
             return
 
         new_ports = self._worker.get_new_ports()
@@ -278,10 +292,20 @@ class ConnectionPanel(QWidget):
 
     @pyqtSlot()
     def _toggle_connection(self) -> None:
+        if self._transport_type == TransportType.TCP:
+            if self._tcp_worker.is_connected:
+                self._tcp_worker.disconnect()
+                # worker.disconnect() ниже уже вызван цепочкой через
+                # _on_tcp_disconnected; прямой вызов — страховка.
+                if self._worker.is_connected:
+                    self._worker.disconnect()
+            else:
+                if self._worker.is_connected:
+                    self._worker.disconnect()
+                self._connect_wifi()
+            return
         if self._worker.is_connected:
             self._worker.disconnect()
-        elif self._transport_type == TransportType.TCP:
-            self._connect_wifi()
         else:
             port = self._port_combo.currentData()
             if not port:
@@ -369,6 +393,8 @@ class ConnectionPanel(QWidget):
 
     @pyqtSlot(str)
     def _on_tcp_connected(self, address: str) -> None:
+        # Общий тракт: очередь команд и парсинг идут через SerialWorker.
+        self._worker.attach_external(self._tcp_worker.send_raw)
         self._dot.setStyleSheet("background-color: #44ff88; border-radius: 5px;")
         self._status_label.setText("Подключено по WiFi")
         self._status_label.setStyleSheet("color: #44ff88; font-size: 11px;")
@@ -379,14 +405,22 @@ class ConnectionPanel(QWidget):
         self._port_combo.setEnabled(False)
         self._device_info.show()
         self._device_info.setText("WiFi: {}".format(address))
+        # Запускаем тот же автоскан, что и для USB (VER/serial/POS/SET).
+        self._worker.connected.emit(address)
 
     @pyqtSlot()
     def _on_tcp_disconnected(self) -> None:
-        self._on_disconnected()
+        if self._worker.is_connected:
+            self._worker.disconnect()  # detach external + сигнал disconnected
+        else:
+            self._on_disconnected()
 
     @pyqtSlot(str)
     def _on_tcp_error(self, message: str) -> None:
-        self._on_disconnected()
+        if self._worker.is_connected:
+            self._worker.disconnect()
+        else:
+            self._on_disconnected()
         self._status_label.setText("Ошибка WiFi")
         self._status_label.setStyleSheet("color: #ff5555; font-size: 11px;")
         self._connect_btn.setEnabled(True)

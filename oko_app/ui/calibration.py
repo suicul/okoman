@@ -111,6 +111,7 @@ class Calibration(QWidget):
 
         # Header
         header = QLabel("Калибровка датчиков")
+        header.setAccessibleName("Экран калибровки датчиков")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
@@ -139,12 +140,16 @@ class Calibration(QWidget):
         nav_row.setSpacing(12)
 
         self._btn_prev = QPushButton("← Назад")
+        self._btn_prev.setMinimumHeight(40)
+        self._btn_prev.setAccessibleName("Предыдущий шаг калибровки")
         self._btn_prev.clicked.connect(self._prev_step)
         nav_row.addWidget(self._btn_prev)
 
         nav_row.addStretch()
 
         self._btn_next = QPushButton("Далее →")
+        self._btn_next.setMinimumHeight(40)
+        self._btn_next.setAccessibleName("Следующий шаг калибровки")
         self._btn_next.setObjectName("primaryButton")
         self._btn_next.clicked.connect(self._next_step)
         nav_row.addWidget(self._btn_next)
@@ -227,8 +232,9 @@ class Calibration(QWidget):
         card_layout.addWidget(title)
 
         desc = QLabel(
-            "Нажмите кнопку «Начать калибровку». "
-            "Водитель должен смотреть прямо перед собой 10 секунд."
+            "Нажмите «Начать калибровку», затем удерживайте КНОПКУ НА ПЛАТЕ 6 сек "
+            "до голосового «Началась калибровка...». Водитель должен смотреть "
+            "прямо перед собой 10 сек. Результат: CAL_OK / CAL_ER."
         )
         desc.setStyleSheet("color: #8b949e; font-size: 13px;")
         desc.setWordWrap(True)
@@ -237,6 +243,8 @@ class Calibration(QWidget):
         card_layout.addSpacing(16)
 
         self._btn_start_cal = QPushButton("Начать калибровку")
+        self._btn_start_cal.setMinimumHeight(40)
+        self._btn_start_cal.setAccessibleName("Начать калибровку датчиков")
         self._btn_start_cal.setObjectName("primaryButton")
         self._btn_start_cal.setFixedWidth(220)
         self._btn_start_cal.clicked.connect(self._start_calibration)
@@ -244,6 +252,7 @@ class Calibration(QWidget):
 
         # Progress bar
         self._cal_progress = QProgressBar()
+        self._cal_progress.setAccessibleName("Прогресс калибровки")
         self._cal_progress.setFixedHeight(30)
         self._cal_progress.setFixedWidth(300)
         self._cal_progress.setValue(0)
@@ -267,6 +276,7 @@ class Calibration(QWidget):
 
         # Status with countdown
         self._cal_status = QLabel("")
+        self._cal_status.setAccessibleName("Статус калибровки")
         self._cal_status.setStyleSheet("font-size: 14px; font-weight: 500;")
         self._cal_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(self._cal_status)
@@ -354,11 +364,11 @@ class Calibration(QWidget):
         self._cal_timer.start(self._cal_timeout * 1000)
 
         # Send calibration commands using CommandDef
+        # По руководству (разд. 6.6) калибровку запускает УДЕРЖАНИЕ КНОПКИ 6 сек —
+        # приложение ничего не отправляет для старта, только TEST ON для фона
+        # тестового режима и слушает CAL_OK / CAL_ER.
         if self._worker.is_connected:
             self._worker.send_command(build_command_string(CMD_TEST_ON))
-            QTimer.singleShot(500, lambda: self._worker.send_command(
-                build_command_string(CMD_EYES, "1")
-            ))
 
     @pyqtSlot()
     def _update_countdown(self) -> None:
@@ -390,8 +400,11 @@ class Calibration(QWidget):
         if not self._calibration_active:
             return
 
-        # Stop timeout timer on any response
-        self._cal_timer.stop()
+        upper = line.upper()
+        if "CAL_OK" in upper or "CAL_ER" in upper:
+            # Таймаут снимаем только по итоговым маркерам калибровки:
+            # посторонний лог (POS/GSM) не должен «замораживать» ожидание.
+            self._cal_timer.stop()
 
         if "CAL_OK" in line or "успешно завершена" in line.lower():
             self._calibration_active = False

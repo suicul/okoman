@@ -48,8 +48,11 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("ОКО — Управление БОД")
-        self.setMinimumSize(900, 600)
+        self.setObjectName("mainWindow")
+        self.setWindowTitle("ОКО — Управление БОД v{}".format(__version__))
+        # 860×560 — влезает в нетбучные 1024×600 полевых ноутбуков.
+        self.setMinimumSize(860, 560)
+        self.resize(1100, 700)
 
         self._worker = SerialWorker(self)
         self._current_page = 0
@@ -99,17 +102,22 @@ class MainWindow(QMainWindow):
         # ── Sidebar ──────────────────────────────────────────────────────────
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
+        sidebar.setMinimumWidth(208)
+        sidebar.setMaximumWidth(208)
         sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(16, 20, 16, 20)
+        sidebar_layout.setContentsMargins(12, 16, 12, 16)
         sidebar_layout.setSpacing(0)
 
         # Logo / Title - vertical layout for better appearance
         logo_card = QWidget()
-        logo_card.setFixedWidth(280)  # Fixed width to match sidebar content area
+        logo_card.setMinimumWidth(176)
+        logo_card.setMaximumWidth(208)
         logo_layout = QVBoxLayout(logo_card)
-        logo_layout.setContentsMargins(0, 20, 0, 20)
-        logo_layout.setSpacing(10)
+        logo_layout.setContentsMargins(0, 12, 0, 12)
+        logo_layout.setSpacing(4)
         logo_layout.setAlignment(Qt.AlignCenter)
+
+        logo_card.setToolTip("ОКО БОД Manager")
 
         # App icon - use oko_icon.png from project root
         icon_path = os.path.join(
@@ -122,6 +130,9 @@ class MainWindow(QMainWindow):
                 pixmap = icon.pixmap(80, 80)
                 if not pixmap.isNull():
                     logo_label = QLabel()
+                    logo_label.setObjectName("appLogo")
+                    logo_label.setAccessibleName("Логотип ОКО БОД Manager")
+                    logo_label.setToolTip("ОКО БОД Manager")
                     logo_label.setPixmap(pixmap.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation))
                     logo_label.setFixedSize(80, 80)
                     logo_label.setAlignment(Qt.AlignCenter)
@@ -155,23 +166,26 @@ class MainWindow(QMainWindow):
         # Separator
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet("background-color: #30363d; max-height: 1px;")
+        sep.setStyleSheet("background-color: #30363d; max-height: 1px; margin: 12px 0;")
         sidebar_layout.addWidget(sep)
 
         # Navigation buttons
         self._nav_buttons = []
         pages = [
-            ("\u25c6", "Обзор"),
-            ("\u26a1", "Диагностика"),
-            ("\u2699", "Конфигурация"),
-            ("\u25ce", "Калибровка"),
-            ("\u25c8", "Мониторинг"),
-            ("\u25b8", "Терминал"),
+            ("01", "Обзор"),
+            ("02", "Диагностика"),
+            ("03", "Конфигурация"),
+            ("04", "Калибровка"),
+            ("05", "Мониторинг"),
+            ("06", "Терминал"),
         ]
 
-        for i, (icon_char, label) in enumerate(pages):
-            btn = QPushButton("{}  {}".format(icon_char, label))
+        for i, (icon_text, label) in enumerate(pages):
+            btn = QPushButton("{}  {}".format(icon_text, label))
             btn.setObjectName("navBtn")
+            btn.setMinimumHeight(40)
+            btn.setToolTip(label)
+            btn.setAccessibleName(label)
             btn.setCheckable(True)
             btn.clicked.connect(lambda _, idx=i: self._switch_page(idx))
             sidebar_layout.addWidget(btn)
@@ -189,13 +203,13 @@ class MainWindow(QMainWindow):
         author_label = QLabel("\u00a9 Гореловский И.А.")
         author_label.setObjectName("labelSecondary")
         author_label.setAlignment(Qt.AlignCenter)
-        author_label.setStyleSheet("color: #a0aab4; font-size: 10px; padding: 2px;")
+        author_label.setStyleSheet("color: #a0aab4; font-size: 11px; padding: 4px;")
         footer_layout.addWidget(author_label)
 
         version_label = QLabel("v{}".format(__version__))
         version_label.setObjectName("labelSecondary")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet("color: #a0aab4; font-size: 10px; padding: 2px;")
+        version_label.setStyleSheet("color: #a0aab4; font-size: 11px; padding: 4px;")
         footer_layout.addWidget(version_label)
 
         sidebar_layout.addWidget(footer_card)

@@ -19,6 +19,7 @@ from ..core.commands import (
     CMD_VER, CMD_SERIAL, CMD_DEBUG_ONLY_POS, CMD_DEBUG_ONLY_GSM,
     build_command_string,
 )
+from ..core.constants import LED_BLINK_DURATION
 from .theme import LED_OFF, LED_POWER, LED_GPS, LED_GSM, LED_OPTICS
 
 
@@ -26,6 +27,7 @@ AUTO_SCAN_COMMANDS = (
     (CMD_VER, "ver", 30000, 1),
     (CMD_SERIAL, "serial", 10000, 1),
     (CMD_DEBUG_ONLY_POS, "pos", 30000, 1),
+    (CMD_DEBUG_ONLY_GSM, "gsm", 30000, 1),
     ("SET", "set", 60000, 1),
 )
 
@@ -44,11 +46,14 @@ class LedIndicator(QFrame):
         layout.setSpacing(6)
 
         self._led = QFrame()
+        self._led.setObjectName("ledIndicator")
+        self._led.setAccessibleName("Индикатор: {}".format(label))
         self._led.setFixedSize(24, 24)
         self._led.setStyleSheet(self._led_style(self._color_off))
         layout.addWidget(self._led, alignment=Qt.AlignCenter)
 
         self._label = QLabel(label)
+        self._label.setAccessibleName(label)
         self._label.setAlignment(Qt.AlignCenter)
         self._label.setStyleSheet("color: #8b949e; font-size: 10px;")
         layout.addWidget(self._label)
@@ -128,6 +133,7 @@ class Dashboard(QWidget):
         main_layout.setContentsMargins(24, 24, 24, 24)
 
         header = QLabel("Обзор устройства")
+        header.setAccessibleName("Экран обзора устройства")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
@@ -178,6 +184,8 @@ class Dashboard(QWidget):
         self._scan_status.setStyleSheet("color: #ffbb33; font-size: 11px;")
         self._scan_status.hide()
         self._btn_skip_scan = QPushButton("Пропустить этап")
+        self._btn_skip_scan.setMinimumHeight(36)
+        self._btn_skip_scan.setAccessibleName("Пропустить текущий этап сканирования")
         self._btn_skip_scan.hide()
         self._btn_skip_scan.clicked.connect(self._skip_scan_step)
 
@@ -190,6 +198,7 @@ class Dashboard(QWidget):
         
         # Scan progress bar
         self._scan_progress = QProgressBar()
+        self._scan_progress.setAccessibleName("Прогресс автоматического сканирования")
         self._scan_progress.setFixedHeight(24)
         self._scan_progress.setValue(0)
         self._scan_progress.setFormat("Сканирование... %p%")
@@ -251,12 +260,18 @@ class Dashboard(QWidget):
         buttons_row.setSpacing(10)
 
         self._btn_query_ver = QPushButton("Запрос версии")
+        self._btn_query_ver.setMinimumHeight(36)
+        self._btn_query_ver.setAccessibleName("Запросить версию прошивки")
         self._btn_query_ver.clicked.connect(lambda: self._send(CMD_VER))
 
         self._btn_query_serial = QPushButton("Запрос серийного номера")
+        self._btn_query_serial.setMinimumHeight(36)
+        self._btn_query_serial.setAccessibleName("Запросить серийный номер")
         self._btn_query_serial.clicked.connect(lambda: self._send(CMD_SERIAL))
 
         self._btn_restart = QPushButton("Перезагрузка (RST)")
+        self._btn_restart.setMinimumHeight(36)
+        self._btn_restart.setAccessibleName("Перезагрузить устройство")
         self._btn_restart.setObjectName("dangerButton")
         self._btn_restart.clicked.connect(lambda: self._send_cmd_string("RST"))
 
@@ -277,6 +292,7 @@ class Dashboard(QWidget):
         self._worker.serial_number.connect(self._on_serial)
         self._worker.gps_data.connect(self._on_gps)
         self._worker.gsm_data.connect(self._on_gsm)
+        self._worker.sensor_event.connect(self._on_sensor)
         self._worker.settings_data.connect(self._on_settings)
         self._worker.connected.connect(self._on_device_connected)
         self._worker.disconnected.connect(self._on_device_disconnected)
@@ -456,10 +472,9 @@ class Dashboard(QWidget):
         self._info_gps_lat.set_value(data.get("lat", "\u2014"))
         self._info_gps_lng.set_value(data.get("lng", "\u2014"))
         self._info_gps_vel.set_value("{} км/ч".format(data.get("vel", "\u2014")))
-        # GPS LED: blink on GPS data received
+        # GPS LED: вспышка на каждый пакет данных (видна ~300 мс).
         self._led_gps.set_on(True)
-        QMetaObject.invokeMethod(self._led_gps, "_turn_off", 
-                                Qt.QueuedConnection)
+        QTimer.singleShot(LED_BLINK_DURATION, self._led_gps._turn_off)
 
     @pyqtSlot(dict)
     def _on_gsm(self, data: dict) -> None:
@@ -469,10 +484,9 @@ class Dashboard(QWidget):
         self._info_gsm_signal.set_value_color(color)
         mqtt = data.get("mqtt_status", "\u2014")
         self._info_mqtt.set_value(mqtt if mqtt else "\u2014")
-        # GSM LED: blink on GSM data received
+        # GSM LED: вспышка на каждый пакет (видна ~300 мс).
         self._led_gsm.set_on(True)
-        QMetaObject.invokeMethod(self._led_gsm, "_turn_off",
-                                Qt.QueuedConnection)
+        QTimer.singleShot(LED_BLINK_DURATION, self._led_gsm._turn_off)
 
     @pyqtSlot(dict)
     def _on_settings(self, data: dict) -> None:
@@ -494,6 +508,16 @@ class Dashboard(QWidget):
             else:
                 field_widget.set_value("\u2014")
                 field_widget.set_value_color("#e6edf3")
+
+    @pyqtSlot(str)
+    def _on_sensor(self, line: str) -> None:
+        # Индикаторы оптики: вспышка обоих датчиков на событие.
+        # Левый/правый различить по цвету сообщений плата не передаёт,
+        # поэтому мигаем парой — как на корпусе БОД.
+        self._led_optics_l.set_on(True)
+        self._led_optics_r.set_on(True)
+        QTimer.singleShot(LED_BLINK_DURATION, self._led_optics_l._turn_off)
+        QTimer.singleShot(LED_BLINK_DURATION, self._led_optics_r._turn_off)
 
     def _send(self, cmd) -> None:
         if self._worker.is_connected:

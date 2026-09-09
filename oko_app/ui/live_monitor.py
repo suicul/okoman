@@ -43,11 +43,13 @@ class StatCard(QFrame):
         layout.setSpacing(6)
 
         self._label = QLabel(label)
+        self._label.setAccessibleName("Показатель: {}".format(label))
         self._label.setStyleSheet("color: #a0aab4; font-size: 12px; font-weight: 500;")
         self._label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self._label)
 
         self._value = QLabel(value)
+        self._value.setAccessibleName("Значение: {}".format(label))
         self._value.setStyleSheet(
             "color: #00d4aa; font-size: 24px; font-weight: 700;"
         )
@@ -89,24 +91,29 @@ class LiveMonitor(QWidget):
         # Header with refresh controls
         header_row = QHBoxLayout()
         header = QLabel("Мониторинг в реальном времени")
+        header.setAccessibleName("Экран мониторинга в реальном времени")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         header_row.addWidget(header)
 
         header_row.addStretch()
 
         self._btn_refresh_gps = QPushButton("GPS")
+        self._btn_refresh_gps.setMinimumHeight(36)
         self._btn_refresh_gps.clicked.connect(self._query_gps)
         header_row.addWidget(self._btn_refresh_gps)
 
         self._btn_refresh_gsm = QPushButton("GSM")
+        self._btn_refresh_gsm.setMinimumHeight(36)
         self._btn_refresh_gsm.clicked.connect(self._query_gsm)
         header_row.addWidget(self._btn_refresh_gsm)
 
         self._btn_refresh_sensors = QPushButton("Датчики")
+        self._btn_refresh_sensors.setMinimumHeight(36)
         self._btn_refresh_sensors.clicked.connect(self._query_sensors)
         header_row.addWidget(self._btn_refresh_sensors)
 
         self._btn_refresh_pwr = QPushButton("Питание")
+        self._btn_refresh_pwr.setMinimumHeight(36)
         self._btn_refresh_pwr.clicked.connect(self._query_power)
         header_row.addWidget(self._btn_refresh_pwr)
 
@@ -155,6 +162,8 @@ class LiveMonitor(QWidget):
         log_header.addStretch()
 
         self._btn_clear_log = QPushButton("Очистить")
+        self._btn_clear_log.setMinimumHeight(36)
+        self._btn_clear_log.setAccessibleName("Очистить журнал событий")
         self._btn_clear_log.clicked.connect(self._clear_log)
         log_header.addWidget(self._btn_clear_log)
 
