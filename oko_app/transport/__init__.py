@@ -208,9 +208,10 @@ class _TcpReader(QThread):
                 log.debug("TCP RX raw %d bytes: %s", len(chunk), chunk.hex(" "))
                 # Нормализация окончаний: \r\n и голый \r → \n, чтобы ответы
                 # с \r без \n не застревали в буфере навсегда.
-                buf += chunk.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                buf += chunk
                 while b"\n" in buf:
                     raw, buf = buf.split(b"\n", 1)
+                    raw = raw.rstrip(b"\r")
                     line = raw.decode("utf-8", errors="replace").strip()
                     if line:
                         log.debug("TCP RX line hex: %s", raw.hex(" "))
