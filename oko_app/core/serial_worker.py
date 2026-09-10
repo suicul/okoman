@@ -509,7 +509,8 @@ class SerialWorker(QObject):
             return
         
         # Strip ANSI codes and timestamp first
-        stripped = re.sub(r'\x1b\[[0-9;]*[mGKH]', '', line).strip()
+        stripped = re.sub(r'\x1b\[[0-9;?]*[ -/]*[@-~]', '', line).strip()
+        stripped = stripped.replace("\x1b", "")
         stripped = re.sub(r'^\d{2}:\d{2}:\d{2}\s+', '', stripped)
 
         # Filter empty lines after stripping
@@ -527,9 +528,9 @@ class SerialWorker(QObject):
         # Check if this is the SET block end marker
         is_set_end = "======" in stripped and "Last Address" in stripped and "Len:" in stripped
         # Check if this is a SET prefix line
-        is_set_prefix = re.match(r"^SET:\s*", stripped, re.IGNORECASE)
+        is_set_prefix = re.search(r"\bSET:\s*", stripped, re.IGNORECASE) is not None
         # Check if this is a key=value pair (settings block)
-        is_kv_pair = re.match(r"^\w[\w]*\s*=\s*", stripped) and not is_gps
+        is_kv_pair = re.search(r"\b\w[\w]*\s*=\s*", stripped) is not None and not is_gps
 
         if is_echo:
             self.data_received.emit(stripped)
@@ -621,9 +622,9 @@ class SerialWorker(QObject):
 
         # ── Serial number ──
         # Format: "SERIAL: The board serial number is 001479"
-        serial_match = re.search(r"(Serial|serial|SERIAL)[:\s]+(.+)", line)
+        serial_match = re.search(r"\b(?:Serial|SERIAL)\s*:\s*(.+)", line, re.IGNORECASE)
         if serial_match:
-            serial_text = serial_match.group(2).strip()
+            serial_text = serial_match.group(1).strip()
             # Extract just the number
             num_match = re.search(r'(\d+)', serial_text)
             if num_match:

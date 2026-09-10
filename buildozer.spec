@@ -27,7 +27,7 @@ version = 2.0.0
 # (list) Application requirements
 # kivymd 2.x (API MDButton/MDButtonText, используемый в oko_mobile/main.py)
 # pyserial — резервный канал USB OTG (/dev/ttyUSB*, /dev/ttyACM*)
-requirements = python3,kivy==2.3.0,kivymd==2.0.0,materialyoucolor,pyserial
+requirements = python3,kivy==2.3.0,kivymd==2.0.0,materialyoucolor,asynckivy,pyserial
 
 # (str) Custom source folders for requirements
 # (list) Garden requirements

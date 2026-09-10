@@ -95,6 +95,20 @@ def test_worker_collects_settings_lines() -> None:
     }
 
 
+def test_worker_parses_ansi_timestamped_serial_and_settings() -> None:
+    worker = SerialWorker()
+    serial_numbers: list[str] = []
+    settings: list[dict] = []
+    worker.serial_number.connect(serial_numbers.append)
+    worker.settings_data.connect(settings.append)
+
+    worker._on_line("\x1b[2K\x1b[1;36m17:11:00 SERIAL: The board serial number is 001460\x1b[0m")
+    worker._on_line("\x1b[2K\x1b[1;36m17:11:01 SET: SpkVol = 0.5\x1b[0m")
+
+    assert serial_numbers == ["001460"]
+    assert settings[-1]["SpkVol"] == "0.5"
+
+
 class WritablePort:
     def __init__(self) -> None:
         self.is_open = True
