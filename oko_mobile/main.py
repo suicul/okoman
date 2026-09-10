@@ -31,7 +31,7 @@ from kivymd.uix.navigationbar import (
     MDNavigationItemIcon,
     MDNavigationItemLabel,
 )
-from kivymd.uix.toolbar import MDTopAppBar
+from kivymd.uix.appbar import MDTopAppBar
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.card import MDCard

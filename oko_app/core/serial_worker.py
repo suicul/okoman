@@ -368,6 +368,9 @@ class SerialWorker(QObject):
         if not self.is_connected:
             self.error.emit("Нет подключения")
             return request.request_id
+        if self._ext_send is not None and self._ext_connected:
+            self.send_terminal_command(request.command)
+            return request.request_id
         self._command_queue.append(request)
         self._start_next_command()
         return request.request_id
