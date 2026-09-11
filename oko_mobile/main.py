@@ -1237,13 +1237,11 @@ class OkoMobileApp(MDApp):
     def build(self):
         self._configure_logging()
         logging.info("Building mobile UI")
-        self.load_kv_string(KVStyleSheet)
-        self.load_kv_string(KV_CONNECTION)
-        self.load_kv_string(KV_DASHBOARD)
-        self.load_kv_string(KV_DIAGNOSTICS)
-        self.load_kv_string(KV_CONFIGURATION)
-        self.load_kv_string(KV_MONITOR)
-        self.load_kv_string(KV_TERMINAL)
+        for kv_source in (
+            KVStyleSheet, KV_CONNECTION, KV_DASHBOARD, KV_DIAGNOSTICS,
+            KV_CONFIGURATION, KV_MONITOR, KV_TERMINAL,
+        ):
+            Builder.load_string(kv_source)
 
         # Screen manager
         self.sm = MDScreenManager()
