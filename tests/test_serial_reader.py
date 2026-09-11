@@ -109,6 +109,27 @@ def test_worker_parses_ansi_timestamped_serial_and_settings() -> None:
     assert settings[-1]["SpkVol"] == "0.5"
 
 
+def test_prompt_prefixed_responses_are_not_command_echoes() -> None:
+    worker = SerialWorker()
+    versions = []
+    settings = []
+    serials = []
+    worker.version_info.connect(lambda version, build: versions.append((version, build)))
+    worker.settings_data.connect(settings.append)
+    worker.serial_number.connect(serials.append)
+    worker._on_line(">> VER")
+    worker._on_line(">> SET")
+    assert versions == [] and settings == []
+    worker._on_line(">> 18:17:51 CMD: MCU: ST Ver: 00242.SUEKKUZ [A7682E] Make: May 15 2025 12:23:42")
+    worker._on_line(">> 18:17:51 SERIAL: The board serial number is 001460")
+    worker._on_line(">> 18:17:52 SET: SpkVol = 0.5")
+    worker._on_line("\x1b[2K>> 18:17:52 SET: GpsGNSS = GLONAS\x1b[0m")
+    worker._on_line(">> 18:17:55 SET: ====== Last Address: 0x080C02B8 ====== Len: 696 / 131072 ======")
+    assert versions == [("00242.SUEKKUZ [A7682E]", "May 15 2025 12:23:42")]
+    assert serials == ["001460"]
+    assert settings[-1] == {"SpkVol": "0.5", "Gps": "GLONAS"}
+
+
 class WritablePort:
     def __init__(self) -> None:
         self.is_open = True

@@ -511,6 +511,7 @@ class SerialWorker(QObject):
         # Strip ANSI codes and timestamp first
         stripped = re.sub(r'\x1b\[[0-9;?]*[ -/]*[@-~]', '', line).strip()
         stripped = stripped.replace("\x1b", "")
+        stripped = re.sub(r'^(?:>>\s*)+(?=\d{2}:\d{2}:\d{2}\s+)', '', stripped)
         stripped = re.sub(r'^\d{2}:\d{2}:\d{2}\s+', '', stripped)
 
         # Filter empty lines after stripping
