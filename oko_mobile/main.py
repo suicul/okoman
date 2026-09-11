@@ -1274,6 +1274,7 @@ class OkoMobileApp(MDApp):
         layout = MDBoxLayout(orientation="vertical")
 
         bottom_nav = MDNavigationBar()
+        self._navigation_items = []
         for name, text, icon in (
             ("dashboard_tab", "Обзор", "information"),
             ("diagnostics_tab", "Диагностика", "bug-check"),
@@ -1281,14 +1282,17 @@ class OkoMobileApp(MDApp):
             ("monitor_tab", "Монитор", "chart-line"),
             ("terminal_tab", "Терминал", "console"),
         ):
-            bottom_nav.add_widget(MDNavigationItem(
+            item = MDNavigationItem(
                 MDNavigationItemIcon(icon=icon),
                 MDNavigationItemLabel(text=text),
-                name=name,
-            ))
+            )
+            self._navigation_items.append((item, name))
+            bottom_nav.add_widget(item)
 
         # Tab switching
-        bottom_nav.bind(on_switch_tabs=lambda bar, item, icon, text: self._on_tab_switch(item.name))
+        bottom_nav.bind(on_switch_tabs=lambda bar, item, icon, text: self._on_tab_switch(
+            next(name for nav_item, name in self._navigation_items if nav_item is item)
+        ))
 
         layout.add_widget(self.sm)
         layout.add_widget(bottom_nav)
