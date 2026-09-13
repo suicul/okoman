@@ -38,6 +38,7 @@ QWidget {{
     color: {TEXT_PRIMARY};
     font-family: 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', sans-serif;
     font-size: 13px;
+    selection-color: {BG_PRIMARY};
 }}
 
 QScrollArea {{
@@ -63,7 +64,7 @@ QMainWindow {{
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 #sidebar {{
     background-color: {BG_SECONDARY};
-    border-right: 1px solid {BORDER};
+    border-right: 1px solid #26313b;
     min-width: 208px;
     max-width: 208px;
 }}
@@ -73,7 +74,8 @@ QMainWindow {{
     color: {TEXT_SECONDARY};
     border: none;
     border-left: 3px solid transparent;
-    padding: 10px 12px;
+    border-radius: 6px;
+    padding: 10px 14px;
     text-align: left;
     font-size: 13px;
     font-weight: 500;
@@ -81,7 +83,7 @@ QMainWindow {{
 }}
 
 #sidebar QPushButton:hover {{
-    background-color: {BG_TERTIARY};
+    background-color: #1d2630;
     color: {TEXT_PRIMARY};
 }}
 
@@ -116,7 +118,7 @@ QMainWindow {{
 #card {{
     background-color: {BG_SECONDARY};
     border: 1px solid {BORDER};
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 16px;
 }}
 
@@ -132,8 +134,8 @@ QPushButton {{
     background-color: {BG_TERTIARY};
     color: {TEXT_PRIMARY};
     border: 1px solid {BORDER};
-    border-radius: 8px;
-    padding: 8px 16px;
+    border-radius: 7px;
+    padding: 9px 16px;
     font-weight: 500;
     min-height: 20px;
 }}
@@ -157,7 +159,9 @@ QRadioButton:focus, QCheckBox:focus {{
 }}
 
 QPushButton:pressed {{
-    background-color: #00d4aa55;
+    background-color: #00a889;
+    padding-top: 10px;
+    padding-bottom: 8px;
 }}
 
 QPushButton:disabled {{
@@ -193,7 +197,7 @@ QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
     background-color: {BG_TERTIARY};
     color: {TEXT_PRIMARY};
     border: 1px solid {BORDER};
-    border-radius: 8px;
+    border-radius: 7px;
     padding: 8px 12px;
     selection-background-color: {ACCENT_DIM};
     min-height: 20px;
@@ -242,6 +246,7 @@ QTextEdit {{
     padding: 10px;
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 12px;
+    line-height: 1.25em;
     selection-background-color: {ACCENT_DIM};
 }}
 

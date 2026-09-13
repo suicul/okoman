@@ -3,9 +3,14 @@ PyQt5>=5.15.0
 pyserial>=3.5
 pyinstaller>=5.0
 
-# Optional: Android (Kivy-based mobile UI)
-# kivy>=2.2.0
-# kivy-examples>=2.2.0
+# Android (KivyMD 2.x mobile UI; keep versions aligned with buildozer.spec)
+# Install these on a development machine when running oko_mobile/main.py.
+kivy==2.3.0
+kivymd==2.0.0
+materialyoucolor==3.0.4
+materialshapes==0.3
+asynckivy==0.6.4
+asyncgui
 
 # Optional: Development
 # pytest>=7.0

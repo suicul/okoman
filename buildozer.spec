@@ -27,7 +27,10 @@ version = 2.0.0
 # (list) Application requirements
 # kivymd 2.x (API MDButton/MDButtonText, используемый в oko_mobile/main.py)
 # pyserial — резервный канал USB OTG (/dev/ttyUSB*, /dev/ttyACM*)
-requirements = python3,kivy==2.3.0,kivymd==2.0.0,materialyoucolor,asynckivy,asyncgui,pyserial
+# KivyMD 2 imports these pure-Python packages at module import time. Pinning
+# them is required: an unversioned requirement may be silently skipped by
+# python-for-android's resolver, producing "No module named materialyoucolor".
+requirements = python3,kivy==2.3.0,kivymd==2.0.0,materialyoucolor==3.0.4,materialshapes==0.3,asynckivy==0.6.4,asyncgui,pyserial
 
 # (str) Custom source folders for requirements
 # (list) Garden requirements
@@ -52,8 +55,8 @@ fullscreen = 0
 # To build for multiple archs, add them here.
 android.archs = arm64-v8a, armeabi-v7a
 
-# (string) Minimum API to use. Android 5.0 (Lollipop): старые планшеты наладчиков.
-android.minapi = 21
+# Android 10 is the minimum supported platform for v1.0.
+android.minapi = 29
 
 # (string) Android SDK version to use. NOTE: minimum value needed for modern
 # Play publishing; device compatibility is governed by minapi above.

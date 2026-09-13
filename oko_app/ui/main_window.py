@@ -96,8 +96,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         root_layout = QHBoxLayout(central)
-        root_layout.setContentsMargins(0, 0, 0, 0)
-        root_layout.setSpacing(0)
+        root_layout.setContentsMargins(12, 12, 12, 12)
+        root_layout.setSpacing(14)
 
         # ── Sidebar ──────────────────────────────────────────────────────────
         sidebar = QFrame()

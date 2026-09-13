@@ -37,10 +37,8 @@ from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDButton, MDButtonText
-from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
-from kivymd.uix.dialog import MDDialog
+from kivymd.uix.textfield import MDTextField
 from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDListItemSupportingText
-from kivymd.uix.list import MDListItemLeadingIcon, MDListItemTrailingIcon
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
 
 # ── Shared color palette ────────────────────────────────────────────────────
@@ -57,12 +55,6 @@ KVStyleSheet = f"""
 
 <MDScreenManager>
     md_bg_color: get_color_from_hex("{BG_PRIMARY}")
-
-<MDBottomNavigation>
-    panel_color: get_color_from_hex("{BG_SECONDARY}")
-    text_color_normal: get_color_from_hex("{TEXT_SECONDARY}")
-    text_color_active: get_color_from_hex("{ACCENT}")
-    icon_color_active: get_color_from_hex("{ACCENT}")
 
 <MDTopAppBar>
     md_bg_color: get_color_from_hex("{BG_SECONDARY}")
@@ -1375,7 +1367,7 @@ class OkoMobileApp(MDApp):
             self._show_snackbar("Нет подключения")
             return
         try:
-            data = f"{cmd}\r\n".encode("ascii")
+            data = f"{cmd.strip()}\r\n".encode("ascii")
             if self.transport_kind == "serial":
                 self.transport.write(data)
                 self.transport.flush()
@@ -1395,6 +1387,10 @@ class OkoMobileApp(MDApp):
                 data = self.transport.read(n) if n else b""
             else:
                 data = self.transport.recv(4096)
+                if data == b"":
+                    self._show_snackbar("Устройство закрыло соединение")
+                    self.disconnect()
+                    return
             if data:
                 self._rx_buffer += data.decode("utf-8", errors="replace")
                 normalized = self._rx_buffer.replace("\r\n", "\n").replace("\r", "\n")

@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 )
 
 from ..core.serial_worker import SerialWorker
-from ..core.commands import ALL_COMMANDS
+from ..core.commands import ALL_COMMANDS, build_command_string
 
 
 class Terminal(QWidget):
@@ -156,7 +156,11 @@ class Terminal(QWidget):
         if not syntax:
             return
         param = self._param_input.text().strip()
-        full_cmd = "{} {}".format(syntax, param).strip() if param else syntax
+        # The combo stores display syntax (which may contain placeholders such
+        # as ``<0.0-1.0>``). Resolve it through the command registry so the
+        # device receives a valid wire command, e.g. ``SET SpkVol 0.7``.
+        command_def = next((cmd for cmd in ALL_COMMANDS if cmd.syntax == syntax), None)
+        full_cmd = build_command_string(command_def, param) if command_def else syntax
         if not self._worker.is_connected:
             self._append_line("! Нет подключения", "#ff5555")
             return

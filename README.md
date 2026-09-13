@@ -55,7 +55,9 @@
 
 ### Mobile (Android)
 - Python 3.8+
-- kivy >= 2.2.0
+- kivy 2.3.0
+- kivymd 2.0.0
+- materialyoucolor 3.0.4
 - buildozer (для сборки APK)
 - Android SDK + NDK (для сборки APK)
 
@@ -291,4 +293,3 @@ sudo usermod -aG dialout $USER
 # Проверить права
 ls -la /dev/ttyUSB0
 ```
-
