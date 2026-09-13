@@ -54,14 +54,14 @@ class ConfigField(QWidget):
         layout.setSpacing(4)
 
         self._label = QLabel(label)
-        self._label.setStyleSheet("color: #8b949e; font-size: 11px; font-weight: 500;")
+        self._label.setObjectName("fieldLabel")
         layout.addWidget(self._label)
 
         self._input = QLineEdit()
         self._input.setPlaceholderText(placeholder)
         self._validator_type = validator_type
         self._error_label = QLabel("")
-        self._error_label.setStyleSheet("color: #ff5555; font-size: 10px;")
+        self._error_label.setObjectName("fieldError")
         self._error_label.hide()
         self._input.textChanged.connect(self._validate)
         layout.addWidget(self._input)
@@ -78,13 +78,12 @@ class ConfigField(QWidget):
         if not valid:
             self._error_label.setText(msg)
             self._error_label.show()
-            self._input.setStyleSheet(
-                "border: 1px solid #ff5555; border-radius: 8px; "
-                "padding: 8px 12px; background-color: #21262d; color: #e6edf3;"
-            )
+            self._input.setProperty("invalid", True)
         else:
             self._error_label.hide()
-            self._input.setStyleSheet("")
+            self._input.setProperty("invalid", False)
+        self._input.style().unpolish(self._input)
+        self._input.style().polish(self._input)
 
     def text(self) -> str:
         return self._input.text().strip()
@@ -148,6 +147,9 @@ class Configuration(QWidget):
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран конфигурации")
         main_layout.addWidget(header)
+        subtitle = QLabel("Параметры связи, GPS и регистратора")
+        subtitle.setProperty("role", "pageSubtitle")
+        main_layout.addWidget(subtitle)
 
         gsm_group = QGroupBox("Настройки SIM-карты / GSM")
         gsm_layout = QVBoxLayout(gsm_group)
@@ -207,7 +209,7 @@ class Configuration(QWidget):
         vol_row = QHBoxLayout()
         vol_row.setSpacing(12)
         vol_label = QLabel("Громкость динамика")
-        vol_label.setStyleSheet("color: #8b949e; font-size: 11px;")
+        vol_label.setObjectName("fieldLabel")
         vol_label.setFixedWidth(160)
         vol_row.addWidget(vol_label)
 
@@ -228,7 +230,7 @@ class Configuration(QWidget):
         reg_row = QHBoxLayout()
         reg_row.setSpacing(12)
         reg_label = QLabel("Тип регистратора")
-        reg_label.setStyleSheet("color: #8b949e; font-size: 11px;")
+        reg_label.setObjectName("fieldLabel")
         reg_label.setFixedWidth(160)
         reg_row.addWidget(reg_label)
 
@@ -247,7 +249,7 @@ class Configuration(QWidget):
         gps_row = QHBoxLayout()
         gps_row.setSpacing(12)
         gps_label = QLabel("Режим GPS")
-        gps_label.setStyleSheet("color: #8b949e; font-size: 11px;")
+        gps_label.setObjectName("fieldLabel")
         gps_label.setFixedWidth(160)
         gps_row.addWidget(gps_label)
 
@@ -274,7 +276,7 @@ class Configuration(QWidget):
             "«Применить» пишет в память платы, но НЕ сохраняет! "
             "Нажмите «Сохранить всё (SET AS)» для записи в EEPROM."
         )
-        save_info.setStyleSheet("color: #ffbb33; font-size: 11px;")
+        save_info.setObjectName("saveHint")
         save_layout.addWidget(save_info)
         save_layout.addStretch()
 
@@ -331,7 +333,7 @@ class Configuration(QWidget):
 
         self._cfg_status = QLabel("")
         self._cfg_status.setAccessibleName("Статус конфигурации")
-        self._cfg_status.setStyleSheet("color: #8b949e; font-size: 11px;")
+        self._cfg_status.setObjectName("configStatus")
         view_layout.addWidget(self._cfg_status)
 
         main_layout.addWidget(view_card)

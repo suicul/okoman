@@ -201,7 +201,7 @@ class Calibration(QWidget):
         card_layout = QVBoxLayout(card)
 
         title = QLabel("Усадка водителя")
-        title.setStyleSheet("font-size: 16px; font-weight: 600; color: #e6edf3;")
+        title.setObjectName("cardTitle")
         card_layout.addWidget(title)
 
         instructions = [
@@ -213,7 +213,7 @@ class Calibration(QWidget):
         ]
         for inst in instructions:
             label = QLabel(inst)
-            label.setStyleSheet("color: #8b949e; font-size: 13px; padding: 4px 0;")
+            label.setObjectName("instructionText")
             card_layout.addWidget(label)
 
         card_layout.addStretch()
@@ -231,7 +231,7 @@ class Calibration(QWidget):
         card_layout = QVBoxLayout(card)
 
         title = QLabel("Процесс калибровки")
-        title.setStyleSheet("font-size: 16px; font-weight: 600; color: #e6edf3;")
+        title.setObjectName("cardTitle")
         card_layout.addWidget(title)
 
         desc = QLabel(
@@ -239,7 +239,7 @@ class Calibration(QWidget):
             "до голосового «Началась калибровка...». Водитель должен смотреть "
             "прямо перед собой 10 сек. Результат: CAL_OK / CAL_ER."
         )
-        desc.setStyleSheet("color: #8b949e; font-size: 13px;")
+        desc.setObjectName("instructionText")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
@@ -299,11 +299,11 @@ class Calibration(QWidget):
         card_layout = QVBoxLayout(card)
 
         title = QLabel("Проверка результата")
-        title.setStyleSheet("font-size: 16px; font-weight: 600; color: #e6edf3;")
+        title.setObjectName("cardTitle")
         card_layout.addWidget(title)
 
         self._result_label = QLabel("Калибровка ещё не выполнялась.")
-        self._result_label.setStyleSheet("color: #8b949e; font-size: 13px;")
+        self._result_label.setObjectName("instructionText")
         self._result_label.setWordWrap(True)
         card_layout.addWidget(self._result_label)
 
@@ -315,7 +315,7 @@ class Calibration(QWidget):
             "• Отвернитесь — «Не вижу ваше лицо».\n"
             "• Поднесите телефон к уху — «Не отвлекайтесь на телефон»."
         )
-        desc.setStyleSheet("color: #8b949e; font-size: 12px;")
+        desc.setObjectName("sectionHint")
         desc.setWordWrap(True)
         card_layout.addWidget(desc)
 
