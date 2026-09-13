@@ -201,6 +201,12 @@ QPushButton:disabled {{
     border-color: {BORDER};
 }}
 
+QPushButton:checked {{
+    background-color: #1b3b38;
+    border-color: {ACCENT};
+    color: {TEXT_ACCENT};
+}}
+
 #primaryButton {{
     background-color: {ACCENT};
     color: {BG_PRIMARY};
@@ -250,6 +256,15 @@ QComboBox QAbstractItemView {{
     border-radius: 8px;
     selection-background-color: {ACCENT_DIM};
     padding: 4px;
+}}
+
+QComboBox::down-arrow {{
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid {TEXT_SECONDARY};
+    width: 0;
+    height: 0;
 }}
 
 /* ── Labels ─────────────────────────────────────────────────────────────── */
@@ -504,5 +519,24 @@ QProgressBar {{
 QProgressBar::chunk {{
     background-color: {ACCENT};
     border-radius: 5px;
+}}
+
+QCheckBox::indicator, QRadioButton::indicator {{
+    border: 1px solid {BORDER};
+    border-radius: 4px;
+    background: {BG_TERTIARY};
+}}
+
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {{
+    background: {ACCENT};
+    border-color: {ACCENT};
+}}
+
+QRadioButton::indicator {{ border-radius: 8px; }}
+
+QStatusBar {{
+    background: {BG_SECONDARY};
+    color: {TEXT_SECONDARY};
+    border-top: 1px solid {BORDER};
 }}
 """
