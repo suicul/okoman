@@ -99,7 +99,6 @@ class Diagnostics(QWidget):
         header = QLabel("Диагностика")
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран диагностики")
-        header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
         quick_card = QFrame()

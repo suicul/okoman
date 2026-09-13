@@ -135,8 +135,11 @@ class Dashboard(QWidget):
         header = QLabel("Обзор устройства")
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран обзора устройства")
-        header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
+
+        subtitle = QLabel("Состояние подключения, телеметрия и быстрые действия")
+        subtitle.setProperty("role", "pageSubtitle")
+        main_layout.addWidget(subtitle)
 
         # ── LED Indicators ──
         indicators_card = QFrame()

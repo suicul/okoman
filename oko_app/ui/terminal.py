@@ -41,7 +41,6 @@ class Terminal(QWidget):
         header = QLabel("Терминал")
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран терминала")
-        header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)
 
         output_card = QFrame()

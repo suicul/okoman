@@ -263,6 +263,27 @@ QLabel {{
     font-size: 11px;
 }}
 
+#connectionStatus {{
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
+    font-weight: 600;
+}}
+
+#connectionHint {{
+    color: {WARNING};
+    font-size: 11px;
+}}
+
+#deviceInfo {{
+    color: {TEXT_ACCENT};
+    font-size: 11px;
+    padding-top: 4px;
+}}
+
+QLineEdit#compactInput, QSpinBox#compactInput, QComboBox#compactInput {{
+    font-size: 12px;
+}}
+
 #labelAccent {{
     color: {TEXT_ACCENT};
     font-weight: 600;

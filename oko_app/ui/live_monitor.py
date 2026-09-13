@@ -93,7 +93,6 @@ class LiveMonitor(QWidget):
         header = QLabel("Мониторинг в реальном времени")
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран мониторинга в реальном времени")
-        header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         header_row.addWidget(header)
 
         header_row.addStretch()

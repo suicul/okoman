@@ -61,7 +61,7 @@ class ConnectionPanel(QWidget):
 
         self._status_label = QLabel("Не подключено")
         self._status_label.setAccessibleName("Статус подключения")
-        self._status_label.setStyleSheet("color: #8b949e; font-size: 12px;")
+        self._status_label.setObjectName("connectionStatus")
         status_row.addWidget(self._status_label)
         status_row.addStretch()
 
@@ -101,7 +101,7 @@ class ConnectionPanel(QWidget):
         self._port_combo = QComboBox()
         self._port_combo.setAccessibleName("COM-порт устройства")
         self._port_combo.setPlaceholderText("COM порт...")
-        self._port_combo.setStyleSheet("font-size: 11px;")
+        self._port_combo.setObjectName("compactInput")
         port_layout.addWidget(self._port_combo)
 
         layout.addWidget(self._port_selector)
@@ -117,7 +117,7 @@ class ConnectionPanel(QWidget):
         self._wifi_address.setAccessibleName("IP-адрес устройства")
         self._wifi_address.setPlaceholderText("IP-адрес устройства (ТД OKO_XXXXXX)")
         self._wifi_address.setText(WIFI_DEFAULT_IP)
-        self._wifi_address.setStyleSheet("font-size: 11px;")
+        self._wifi_address.setObjectName("compactInput")
         wifi_row1.addWidget(self._wifi_address)
 
         self._wifi_port_spin = QSpinBox()
@@ -126,7 +126,7 @@ class ConnectionPanel(QWidget):
         self._wifi_port_spin.setValue(WIFI_DEFAULT_PORT)
         self._wifi_port_spin.setFixedWidth(70)
         self._wifi_port_spin.setSuffix(" :port")
-        self._wifi_port_spin.setStyleSheet("font-size: 11px;")
+        self._wifi_port_spin.setObjectName("compactInput")
         wifi_row1.addWidget(self._wifi_port_spin)
 
         wifi_layout.addLayout(wifi_row1)
@@ -147,19 +147,18 @@ class ConnectionPanel(QWidget):
         self._connect_btn.setAccessibleName("Подключить или отключить устройство")
         self._connect_btn.setObjectName("primaryButton")
         self._connect_btn.setMinimumHeight(36)
-        self._connect_btn.setStyleSheet("font-size: 13px;")
         self._connect_btn.clicked.connect(self._toggle_connection)
         btn_row.addWidget(self._connect_btn)
 
         layout.addLayout(btn_row)
 
         self._auto_label = QLabel("")
-        self._auto_label.setStyleSheet("color: #ffbb33; font-size: 10px;")
+        self._auto_label.setObjectName("connectionHint")
         self._auto_label.hide()
         layout.addWidget(self._auto_label)
 
         self._device_info = QLabel("")
-        self._device_info.setStyleSheet("color: #00d4aa; font-size: 11px;")
+        self._device_info.setObjectName("deviceInfo")
         self._device_info.setWordWrap(True)
         self._device_info.hide()
         layout.addWidget(self._device_info)
