@@ -361,6 +361,23 @@ QGroupBox::title {{
     color: {TEXT_ACCENT};
 }}
 
+#connectionGroup {{
+    background-color: #131a22;
+    border-color: #27333e;
+    margin-top: 10px;
+    padding: 12px 8px 8px 8px;
+}}
+
+#connectionGroup::title {{
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
+    font-weight: 600;
+}}
+
+#connectionFields {{
+    background: transparent;
+}}
+
 /* ── Scroll Bar ─────────────────────────────────────────────────────────── */
 QScrollBar:vertical {{
     background: transparent;

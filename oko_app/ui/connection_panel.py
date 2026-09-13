@@ -69,6 +69,7 @@ class ConnectionPanel(QWidget):
 
         # ── Transport type selector ──────────────────────────────────────
         transport_group = QGroupBox("Тип подключения")
+        transport_group.setObjectName("connectionGroup")
         transport_layout = QHBoxLayout(transport_group)
         transport_layout.setSpacing(12)
         transport_layout.setContentsMargins(8, 4, 8, 4)
@@ -94,6 +95,7 @@ class ConnectionPanel(QWidget):
 
         # ── Serial port selector ─────────────────────────────────────────
         self._port_selector = QWidget()
+        self._port_selector.setObjectName("connectionFields")
         port_layout = QVBoxLayout(self._port_selector)
         port_layout.setContentsMargins(0, 0, 0, 0)
         port_layout.setSpacing(4)
@@ -108,6 +110,7 @@ class ConnectionPanel(QWidget):
 
         # ── WiFi address selector ────────────────────────────────────────
         self._wifi_selector = QWidget()
+        self._wifi_selector.setObjectName("connectionFields")
         wifi_layout = QVBoxLayout(self._wifi_selector)
         wifi_layout.setContentsMargins(0, 0, 0, 0)
         wifi_layout.setSpacing(4)
