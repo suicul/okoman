@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from PyQt5.QtCore import Qt, pyqtSlot, QTimer
+from PyQt5.QtCore import Qt, QEvent, pyqtSlot, QTimer
 from PyQt5.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -123,6 +123,7 @@ class Terminal(QWidget):
         input_layout.setSpacing(8)
 
         self._input = QLineEdit()
+        self._input.installEventFilter(self)
         self._input.setAccessibleName("Команда терминала")
         self._input.setPlaceholderText("Введите команду и нажмите Enter...")
         self._input.returnPressed.connect(self._send_raw)
@@ -168,6 +169,22 @@ class Terminal(QWidget):
         self._history.append(text)
         self._history_idx = len(self._history)
         self._input.clear()
+
+    def eventFilter(self, obj, event):
+        """Navigate command history with Up/Down like a telnet shell."""
+        from PyQt5.QtCore import Qt
+        if obj is self._input and event.type() == QEvent.KeyPress and event.key() == Qt.Key_Up and self._history:
+            self._history_idx = max(0, self._history_idx - 1)
+            self._input.setText(self._history[self._history_idx])
+            self._input.setCursorPosition(len(self._input.text()))
+            return True
+        if obj is self._input and event.type() == QEvent.KeyPress and event.key() == Qt.Key_Down and self._history:
+            self._history_idx = min(len(self._history), self._history_idx + 1)
+            self._input.setText(
+                self._history[self._history_idx] if self._history_idx < len(self._history) else ""
+            )
+            return True
+        return super().eventFilter(obj, event)
 
     def _send_helper_command(self) -> None:
         syntax = self._combo_commands.currentData()
