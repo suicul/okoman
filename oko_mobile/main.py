@@ -1332,6 +1332,9 @@ class OkoMobileApp(MDApp):
         """Connect via TCP (WiFi ТД платы OKO_XXXXXX, 192.168.4.1:1234)."""
         try:
             import socket
+            if self.transport:
+                self.disconnect()
+            self._rx_buffer = ""
             self.transport = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.transport.settimeout(10)
             self.transport.connect((ip, port))
@@ -1369,6 +1372,9 @@ class OkoMobileApp(MDApp):
             if not os.path.exists(dev):
                 continue
             try:
+                if self.transport:
+                    self.disconnect()
+                self._rx_buffer = ""
                 ser = serial.Serial(dev, 115200, timeout=0)
                 self.transport = ser
                 self.transport_kind = "serial"
