@@ -269,6 +269,12 @@ QLabel {{
     font-weight: 600;
 }}
 
+#fieldLabel {{ color: {TEXT_SECONDARY}; font-size: 11px; font-weight: 600; }}
+#fieldError {{ color: {DANGER}; font-size: 10px; }}
+#saveHint {{ color: {WARNING}; font-size: 11px; }}
+#configStatus {{ color: {TEXT_SECONDARY}; font-size: 11px; }}
+QLineEdit[invalid="true"] {{ border-color: {DANGER}; }}
+
 #connectionHint {{
     color: {WARNING};
     font-size: 11px;
@@ -307,6 +313,11 @@ QLineEdit#compactInput, QSpinBox#compactInput, QComboBox#compactInput {{
 #scanStatus {{
     color: {WARNING};
     font-size: 11px;
+}}
+
+#sectionHint, #instructionText {{
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
 }}
 
 /* ── Text Edit / Log ────────────────────────────────────────────────────── */

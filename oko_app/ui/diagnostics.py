@@ -100,6 +100,9 @@ class Diagnostics(QWidget):
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран диагностики")
         main_layout.addWidget(header)
+        subtitle = QLabel("Проверка аппаратуры, каналов и событий датчиков")
+        subtitle.setProperty("role", "pageSubtitle")
+        main_layout.addWidget(subtitle)
 
         quick_card = QFrame()
         quick_card.setObjectName("card")
@@ -153,7 +156,7 @@ class Diagnostics(QWidget):
         spk_layout.addWidget(spk_title)
 
         spk_hint = QLabel("0 — тихий бип, 5 — «Тревога». SPK B — короткий тест-бип.")
-        spk_hint.setStyleSheet("color: #8b949e; font-size: 11px;")
+        spk_hint.setObjectName("sectionHint")
         spk_layout.addWidget(spk_hint)
 
         spk_row1 = QHBoxLayout()

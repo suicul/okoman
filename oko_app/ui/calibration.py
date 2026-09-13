@@ -114,6 +114,9 @@ class Calibration(QWidget):
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран калибровки датчиков")
         main_layout.addWidget(header)
+        subtitle = QLabel("Пошаговая настройка оптических датчиков")
+        subtitle.setProperty("role", "pageSubtitle")
+        main_layout.addWidget(subtitle)
 
         # Step indicator
         self._steps = StepIndicator(
@@ -168,7 +171,7 @@ class Calibration(QWidget):
         card_layout = QVBoxLayout(card)
 
         title = QLabel("Подготовка к калибровке")
-        title.setStyleSheet("font-size: 16px; font-weight: 600; color: #e6edf3;")
+        title.setObjectName("cardTitle")
         card_layout.addWidget(title)
 
         instructions = [
@@ -180,7 +183,7 @@ class Calibration(QWidget):
         ]
         for inst in instructions:
             label = QLabel(inst)
-            label.setStyleSheet("color: #8b949e; font-size: 13px; padding: 4px 0;")
+            label.setObjectName("instructionText")
             card_layout.addWidget(label)
 
         card_layout.addStretch()
