@@ -133,6 +133,7 @@ class Dashboard(QWidget):
         main_layout.setContentsMargins(24, 24, 24, 24)
 
         header = QLabel("Обзор устройства")
+        header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран обзора устройства")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)

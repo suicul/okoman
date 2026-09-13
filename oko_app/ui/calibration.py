@@ -111,6 +111,7 @@ class Calibration(QWidget):
 
         # Header
         header = QLabel("Калибровка датчиков")
+        header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран калибровки датчиков")
         header.setStyleSheet("font-size: 24px; font-weight: 700; color: #e6edf3;")
         main_layout.addWidget(header)

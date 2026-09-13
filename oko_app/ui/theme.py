@@ -61,6 +61,14 @@ QMainWindow {{
     background-color: {BG_PRIMARY};
 }}
 
+/* The content surface is a shade lighter than the window frame, which gives
+   each page a clear reading area without introducing visual noise. */
+QStackedWidget {{
+    background-color: #10161d;
+    border: 1px solid #1f2a34;
+    border-radius: 12px;
+}}
+
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 #sidebar {{
     background-color: {BG_SECONDARY};
@@ -122,11 +130,34 @@ QMainWindow {{
     padding: 16px;
 }}
 
+QFrame#card {{
+    background-color: #151c24;
+    border: 1px solid #27333e;
+}}
+
+QFrame#card:hover {{
+    border-color: #344452;
+}}
+
 #cardTitle {{
     color: {TEXT_PRIMARY};
     font-size: 16px;
     font-weight: 600;
     padding-bottom: 8px;
+    letter-spacing: 0.2px;
+}}
+
+QLabel[role="pageTitle"] {{
+    color: {TEXT_PRIMARY};
+    font-size: 25px;
+    font-weight: 700;
+    padding-bottom: 4px;
+}}
+
+QLabel[role="pageSubtitle"] {{
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
+    padding-bottom: 10px;
 }}
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
