@@ -325,6 +325,11 @@ QLineEdit#compactInput, QSpinBox#compactInput, QComboBox#compactInput {{
     color: {TEXT_SECONDARY};
     font-size: 12px;
 }}
+#testName {{ color: {TEXT_PRIMARY}; font-size: 13px; font-weight: 600; }}
+#testStatus, #testResult {{ color: {TEXT_SECONDARY}; font-size: 12px; }}
+#testStatus[state="running"] {{ color: {WARNING}; font-weight: 600; }}
+#testStatus[state="pass"], #testResult[state="pass"] {{ color: {SUCCESS}; font-weight: 600; }}
+#testStatus[state="fail"], #testResult[state="fail"] {{ color: {DANGER}; font-weight: 600; }}
 
 /* ── Text Edit / Log ────────────────────────────────────────────────────── */
 QTextEdit {{

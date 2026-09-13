@@ -38,44 +38,53 @@ class TestResultCard(QFrame):
 
         self._name = QLabel(name)
         self._name.setAccessibleName("Название теста: {}".format(name))
-        self._name.setStyleSheet("font-size: 13px; font-weight: 600;")
+        self._name.setObjectName("testName")
         self._name.setFixedWidth(180)
         layout.addWidget(self._name)
 
         self._status = QLabel("Ожидание")
         self._status.setAccessibleName("Статус теста: {}".format(name))
-        self._status.setStyleSheet("color: #8b949e; font-size: 12px;")
+        self._status.setObjectName("testStatus")
         layout.addWidget(self._status)
 
         layout.addStretch()
 
         self._result = QLabel("—")
         self._result.setAccessibleName("Результат теста: {}".format(name))
-        self._result.setStyleSheet("color: #8b949e; font-size: 12px;")
+        self._result.setObjectName("testResult")
         self._result.setMinimumWidth(150)
         layout.addWidget(self._result)
 
     def set_running(self) -> None:
         self._status.setText("Выполняется...")
-        self._status.setStyleSheet("color: #ffbb33; font-size: 12px; font-weight: 500;")
+        self._status.setProperty("state", "running")
+        self._refresh_styles()
 
     def set_pass(self, detail: str = "OK") -> None:
         self._status.setText("OK")
-        self._status.setStyleSheet("color: #44ff88; font-size: 12px; font-weight: 500;")
+        self._status.setProperty("state", "pass")
         self._result.setText(detail)
-        self._result.setStyleSheet("color: #44ff88; font-size: 12px;")
+        self._result.setProperty("state", "pass")
+        self._refresh_styles()
 
     def set_fail(self, detail: str = "Ошибка") -> None:
         self._status.setText("Ошибка")
-        self._status.setStyleSheet("color: #ff5555; font-size: 12px; font-weight: 500;")
+        self._status.setProperty("state", "fail")
         self._result.setText(detail)
-        self._result.setStyleSheet("color: #ff5555; font-size: 12px;")
+        self._result.setProperty("state", "fail")
+        self._refresh_styles()
 
     def reset(self) -> None:
         self._status.setText("Ожидание")
-        self._status.setStyleSheet("color: #8b949e; font-size: 12px;")
+        self._status.setProperty("state", "idle")
         self._result.setText("—")
-        self._result.setStyleSheet("color: #8b949e; font-size: 12px;")
+        self._result.setProperty("state", "idle")
+        self._refresh_styles()
+
+    def _refresh_styles(self) -> None:
+        for widget in (self._status, self._result):
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
 
 
 class Diagnostics(QWidget):
