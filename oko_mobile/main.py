@@ -1233,7 +1233,11 @@ class OkoMobileApp(MDApp):
             KVStyleSheet, KV_CONNECTION, KV_DASHBOARD, KV_DIAGNOSTICS,
             KV_CONFIGURATION, KV_MONITOR, KV_TERMINAL,
         ):
-            Builder.load_string(kv_source)
+            try:
+                Builder.load_string(kv_source)
+            except Exception:
+                logging.exception("KV loading failed")
+                raise
 
         # Screen manager
         self.sm = MDScreenManager(size_hint_y=1)
@@ -1311,10 +1315,14 @@ class OkoMobileApp(MDApp):
             # Depending on the KivyMD minor version the dispatcher supplies
             # (bar, item, icon, text) or (item, icon, text).
             item = next((arg for arg in args if any(arg is nav_item for nav_item, _ in self._navigation_items)), None)
-            if item is None:
-                return
             index = next((i for i, (nav_item, _) in enumerate(self._navigation_items)
-                          if nav_item is item), -1)
+                          if nav_item is item), -1) if item is not None else -1
+            if index < 0:
+                # Fallback for builds dispatching a proxy item: use label text.
+                labels = {"Обзор": 0, "Диагностика": 1, "Настройки": 2,
+                          "Монитор": 3, "Терминал": 4}
+                index = next((idx for arg in args if isinstance(arg, str)
+                              for label, idx in labels.items() if arg == label), -1)
             if index >= 0:
                 self._on_tab_switch(self._navigation_items[index][1])
         except Exception:
