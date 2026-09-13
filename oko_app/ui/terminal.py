@@ -42,6 +42,9 @@ class Terminal(QWidget):
         header.setProperty("role", "pageTitle")
         header.setAccessibleName("Экран терминала")
         main_layout.addWidget(header)
+        subtitle = QLabel("Интерактивная оболочка команд устройства")
+        subtitle.setProperty("role", "pageSubtitle")
+        main_layout.addWidget(subtitle)
 
         output_card = QFrame()
         output_card.setObjectName("card")

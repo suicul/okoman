@@ -44,30 +44,28 @@ class StatCard(QFrame):
 
         self._label = QLabel(label)
         self._label.setAccessibleName("Показатель: {}".format(label))
-        self._label.setStyleSheet("color: #a0aab4; font-size: 12px; font-weight: 500;")
+        self._label.setObjectName("metricLabel")
         self._label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self._label)
 
         self._value = QLabel(value)
         self._value.setAccessibleName("Значение: {}".format(label))
-        self._value.setStyleSheet(
-            "color: #00d4aa; font-size: 24px; font-weight: 700;"
-        )
+        self._value.setObjectName("metricValue")
         self._value.setAlignment(Qt.AlignCenter)
         self._value.setWordWrap(False)
         self._value.setMinimumHeight(40)
         layout.addWidget(self._value, stretch=1)
 
         self._unit = QLabel("")
-        self._unit.setStyleSheet("color: #a0aab4; font-size: 11px;")
+        self._unit.setObjectName("metricUnit")
         self._unit.setAlignment(Qt.AlignCenter)
         layout.addWidget(self._unit)
 
     def set_value(self, text: str, color: str = "#00d4aa") -> None:
         self._value.setText(text)
-        self._value.setStyleSheet(
-            f"color: {color}; font-size: 22px; font-weight: 700;"
-        )
+        self._value.setProperty("metricColor", color)
+        self._value.style().unpolish(self._value)
+        self._value.style().polish(self._value)
 
     def set_unit(self, unit: str) -> None:
         self._unit.setText(unit)
@@ -118,6 +116,9 @@ class LiveMonitor(QWidget):
         header_row.addWidget(self._btn_refresh_pwr)
 
         main_layout.addLayout(header_row)
+        subtitle = QLabel("GPS, GSM, питание и события устройства")
+        subtitle.setProperty("role", "pageSubtitle")
+        main_layout.addWidget(subtitle)
 
         # ── Stat cards ───────────────────────────────────────────────────────
         cards_row = QHBoxLayout()

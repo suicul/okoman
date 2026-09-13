@@ -310,6 +310,12 @@ QLineEdit#compactInput, QSpinBox#compactInput, QComboBox#compactInput {{
 #infoValue[valueColor="{WARNING}"] {{ color: {WARNING}; }}
 #infoValue[valueColor="{DANGER}"] {{ color: {DANGER}; }}
 
+#metricLabel, #metricUnit {{ color: {TEXT_SECONDARY}; font-size: 11px; }}
+#metricValue {{ color: {ACCENT}; font-size: 22px; font-weight: 700; }}
+#metricValue[metricColor="{SUCCESS}"] {{ color: {SUCCESS}; }}
+#metricValue[metricColor="{WARNING}"] {{ color: {WARNING}; }}
+#metricValue[metricColor="{DANGER}"] {{ color: {DANGER}; }}
+
 #scanStatus {{
     color: {WARNING};
     font-size: 11px;
