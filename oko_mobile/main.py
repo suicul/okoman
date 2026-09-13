@@ -1282,9 +1282,10 @@ class OkoMobileApp(MDApp):
             bottom_nav.add_widget(item)
 
         # Tab switching
-        bottom_nav.bind(on_switch_tabs=lambda bar, item, icon, text: self._on_tab_switch(
-            next(name for nav_item, name in self._navigation_items if nav_item is item)
-        ))
+        # KivyMD dispatches ``on_switch_tabs`` as (bar, item, icon, text).
+        # Resolve the tab defensively: on some 2.x builds the callback may
+        # provide a proxy widget instead of the exact object identity.
+        bottom_nav.bind(on_switch_tabs=self._on_navigation_event)
 
         layout.add_widget(self.sm)
         layout.add_widget(bottom_nav)
@@ -1302,6 +1303,13 @@ class OkoMobileApp(MDApp):
         screen = screen_map.get(tab_name)
         if screen:
             self.sm.current = screen
+
+    def _on_navigation_event(self, bar, item, icon="", text=""):
+        """Switch screens without allowing a malformed event to kill the app."""
+        index = next((i for i, (nav_item, _) in enumerate(self._navigation_items)
+                      if nav_item is item), -1)
+        if index >= 0:
+            self._on_tab_switch(self._navigation_items[index][1])
 
     def connect_tcp(self, ip, port):
         """Connect via TCP (WiFi ТД платы OKO_XXXXXX, 192.168.4.1:1234)."""
