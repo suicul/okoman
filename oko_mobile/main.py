@@ -1290,6 +1290,7 @@ class OkoMobileApp(MDApp):
         # Resolve the tab defensively: on some 2.x builds the callback may
         # provide a proxy widget instead of the exact object identity.
         bottom_nav.bind(on_switch_tabs=self._on_navigation_event)
+        bottom_nav.set_active_item(self._navigation_items[0][0])
 
         self.sm.current = "connection"
         layout.add_widget(self.sm)
