@@ -942,7 +942,7 @@ TerminalScreen:
 
                 MDButton:
                     style: "outlined"
-                    on_release: root.quick_cmd("POS")
+                    on_release: root.quick_cmd("DEBUG ONLY POS")
 
                     MDButtonText:
                         text: "POS"
@@ -951,7 +951,7 @@ TerminalScreen:
 
                 MDButton:
                     style: "outlined"
-                    on_release: root.quick_cmd("GSM")
+                    on_release: root.quick_cmd("DEBUG ONLY GSM")
 
                     MDButtonText:
                         text: "GSM"
@@ -1076,26 +1076,26 @@ class ConfigurationScreen(MDScreen):
             user = self.ids.gsm_user_field.text.strip()
             pwd = self.ids.gsm_pass_field.text.strip()
             if apn:
-                self._app.send_cmd(f"SET GSM APN={apn}")
+                self._app.send_cmd(f"SET GSM_APN {apn}")
             if user:
-                self._app.send_cmd(f"SET GSM USER={user}")
+                self._app.send_cmd(f"SET GSM_USER {user}")
             if pwd:
-                self._app.send_cmd(f"SET GSM PASS={pwd}")
+                self._app.send_cmd(f"SET GSM_PWD {pwd}")
 
     def apply_mqtt(self):
         if self._app:
             mqtt = self.ids.mqtt_field.text.strip()
             if mqtt:
-                self._app.send_cmd(f"SET MQTT={mqtt}")
+                self._app.send_cmd(f"SET MQTT_URL {mqtt}")
 
     def apply_device(self):
         if self._app:
             vol = self.ids.vol_field.text.strip()
             rec = self.ids.rec_field.text.strip()
             if vol:
-                self._app.send_cmd(f"SET VOL={vol}")
+                self._app.send_cmd(f"SET SpkVol {vol}")
             if rec:
-                self._app.send_cmd(f"SET REC={rec}")
+                self._app.send_cmd(f"SET REG {rec}")
 
     def save_all(self):
         if self._app:
@@ -1164,7 +1164,7 @@ class MonitorScreen(MDScreen):
     def start_monitor(self):
         self._monitoring = True
         if self._app:
-            self._app.send_cmd("POS")
+            self._app.send_cmd("DEBUG ONLY POS")
 
 
 class TerminalScreen(MDScreen):
