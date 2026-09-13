@@ -1470,6 +1470,7 @@ class OkoMobileApp(MDApp):
             line = raw.strip()
             if not line or line == ">>":
                 continue
+            self._term_log("< {}".format(line))
 
             ver = re.search(r"(?:Ver|ver|Version|Firmware Version):\s*(\S+)", line)
             if ver:
@@ -1478,7 +1479,6 @@ class OkoMobileApp(MDApp):
                 if make:
                     v = "{} ({})".format(v, make.group(1).strip())
                 dash.ver_value.text = v
-                self._term_log("< {}".format(line))
                 continue
 
             serial_m = re.search(r"[Ss][Ee][Rr][Ii][Aa][Ll][^0-9]*([0-9]+)", line)
