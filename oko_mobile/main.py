@@ -1304,12 +1304,20 @@ class OkoMobileApp(MDApp):
         if screen:
             self.sm.current = screen
 
-    def _on_navigation_event(self, bar, item, icon="", text=""):
+    def _on_navigation_event(self, *args):
         """Switch screens without allowing a malformed event to kill the app."""
-        index = next((i for i, (nav_item, _) in enumerate(self._navigation_items)
-                      if nav_item is item), -1)
-        if index >= 0:
-            self._on_tab_switch(self._navigation_items[index][1])
+        try:
+            # Depending on the KivyMD minor version the dispatcher supplies
+            # (bar, item, icon, text) or (item, icon, text).
+            item = next((arg for arg in args if any(arg is nav_item for nav_item, _ in self._navigation_items)), None)
+            if item is None:
+                return
+            index = next((i for i, (nav_item, _) in enumerate(self._navigation_items)
+                          if nav_item is item), -1)
+            if index >= 0:
+                self._on_tab_switch(self._navigation_items[index][1])
+        except Exception:
+            logging.exception("Navigation event failed: args=%r", args)
 
     def connect_tcp(self, ip, port):
         """Connect via TCP (WiFi ТД платы OKO_XXXXXX, 192.168.4.1:1234)."""
