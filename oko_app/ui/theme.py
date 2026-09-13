@@ -289,6 +289,26 @@ QLineEdit#compactInput, QSpinBox#compactInput, QComboBox#compactInput {{
     font-weight: 600;
 }}
 
+#infoLabel {{
+    color: {TEXT_SECONDARY};
+    font-size: 12px;
+}}
+
+#infoValue {{
+    color: {TEXT_PRIMARY};
+    font-size: 12px;
+    font-weight: 600;
+}}
+
+#infoValue[valueColor="{SUCCESS}"] {{ color: {SUCCESS}; }}
+#infoValue[valueColor="{WARNING}"] {{ color: {WARNING}; }}
+#infoValue[valueColor="{DANGER}"] {{ color: {DANGER}; }}
+
+#scanStatus {{
+    color: {WARNING};
+    font-size: 11px;
+}}
+
 /* ── Text Edit / Log ────────────────────────────────────────────────────── */
 QTextEdit {{
     background-color: {BG_PRIMARY};

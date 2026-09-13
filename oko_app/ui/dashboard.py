@@ -93,14 +93,14 @@ class InfoRow(QWidget):
         layout.setContentsMargins(0, 6, 0, 6)
 
         self._label = QLabel(label)
-        self._label.setStyleSheet("color: #8b949e; font-size: 12px;")
+        self._label.setObjectName("infoLabel")
         self._label.setMinimumWidth(140)
         self._label.setMaximumWidth(220)
         self._label.setWordWrap(False)
         layout.addWidget(self._label)
 
         self._value = QLabel(value)
-        self._value.setStyleSheet("color: #e6edf3; font-size: 12px; font-weight: 500;")
+        self._value.setObjectName("infoValue")
         self._value.setWordWrap(True)
         layout.addWidget(self._value, stretch=1)
 
@@ -108,9 +108,9 @@ class InfoRow(QWidget):
         self._value.setText(str(text))
 
     def set_value_color(self, color: str) -> None:
-        self._value.setStyleSheet(
-            "color: {}; font-size: 12px; font-weight: 500;".format(color)
-        )
+        self._value.setProperty("valueColor", color)
+        self._value.style().unpolish(self._value)
+        self._value.style().polish(self._value)
 
 
 class Dashboard(QWidget):
@@ -185,7 +185,7 @@ class Dashboard(QWidget):
         self._info_gps_lng = InfoRow("Долгота (Lng)")
         self._info_gps_vel = InfoRow("Скорость")
         self._scan_status = QLabel("")
-        self._scan_status.setStyleSheet("color: #ffbb33; font-size: 11px;")
+        self._scan_status.setObjectName("scanStatus")
         self._scan_status.hide()
         self._btn_skip_scan = QPushButton("Пропустить этап")
         self._btn_skip_scan.setMinimumHeight(36)
@@ -206,20 +206,6 @@ class Dashboard(QWidget):
         self._scan_progress.setFixedHeight(24)
         self._scan_progress.setValue(0)
         self._scan_progress.setFormat("Сканирование... %p%")
-        self._scan_progress.setStyleSheet("""
-            QProgressBar {
-                background-color: #21262d;
-                border: 1px solid #30363d;
-                border-radius: 8px;
-                text-align: center;
-                color: #e6edf3;
-                font-size: 11px;
-            }
-            QProgressBar::chunk {
-                background-color: #00d4aa;
-                border-radius: 6px;
-            }
-        """)
         self._scan_progress.hide()
         main_layout.addWidget(self._scan_progress)
         
