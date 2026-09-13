@@ -1236,7 +1236,7 @@ class OkoMobileApp(MDApp):
             Builder.load_string(kv_source)
 
         # Screen manager
-        self.sm = MDScreenManager()
+        self.sm = MDScreenManager(size_hint_y=1)
 
         self.connection_screen = ConnectionScreen(name="connection")
         self.connection_screen.set_app(self)
@@ -1265,7 +1265,7 @@ class OkoMobileApp(MDApp):
         # Bottom navigation
         layout = MDBoxLayout(orientation="vertical")
 
-        bottom_nav = MDNavigationBar()
+        bottom_nav = MDNavigationBar(size_hint_y=None, height="80dp")
         self._navigation_items = []
         for name, text, icon in (
             ("dashboard_tab", "Обзор", "information"),
@@ -1287,6 +1287,7 @@ class OkoMobileApp(MDApp):
         # provide a proxy widget instead of the exact object identity.
         bottom_nav.bind(on_switch_tabs=self._on_navigation_event)
 
+        self.sm.current = "connection"
         layout.add_widget(self.sm)
         layout.add_widget(bottom_nav)
 
