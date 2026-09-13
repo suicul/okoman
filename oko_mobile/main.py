@@ -1323,6 +1323,11 @@ class OkoMobileApp(MDApp):
                           "Монитор": 3, "Терминал": 4}
                 index = next((idx for arg in args if isinstance(arg, str)
                               for label, idx in labels.items() if arg == label), -1)
+            if index < 0:
+                # Last-resort fallback: KivyMD marks the selected item active
+                # before dispatching the event, even when it passes a proxy.
+                index = next((i for i, (nav_item, _) in enumerate(self._navigation_items)
+                              if getattr(nav_item, "active", False)), -1)
             if index >= 0:
                 self._on_tab_switch(self._navigation_items[index][1])
         except Exception:
