@@ -1205,6 +1205,7 @@ class OkoMobileApp(MDApp):
         self._response_handler = None
         self._log_path = ""
         self._rx_buffer = ""
+        self._poll_events = []
 
     def _configure_logging(self):
         self._log_path = os.path.join(self.user_data_dir, "oko-mobile.log")
@@ -1341,6 +1342,7 @@ class OkoMobileApp(MDApp):
             if self.transport:
                 self.disconnect()
             self._rx_buffer = ""
+            self._cancel_poll_events()
             self.transport = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.transport.settimeout(10)
             self.transport.connect((ip, port))
@@ -1355,11 +1357,11 @@ class OkoMobileApp(MDApp):
             # Start receiving
             Clock.schedule_interval(self._receive_data, 0.1)
             # Автоопрос как на десктопе: версия, серийник, настройки, GPS, GSM.
-            Clock.schedule_once(lambda dt: self.send_cmd("VER"), 0.3)
-            Clock.schedule_once(lambda dt: self.send_cmd("serial"), 0.8)
-            Clock.schedule_once(lambda dt: self.send_cmd("SET"), 1.3)
-            Clock.schedule_once(lambda dt: self.send_cmd("DEBUG ONLY POS"), 1.8)
-            Clock.schedule_once(lambda dt: self.send_cmd("DEBUG ONLY GSM"), 2.3)
+            self._schedule_poll("VER", 0.3)
+            self._schedule_poll("serial", 0.8)
+            self._schedule_poll("SET", 1.3)
+            self._schedule_poll("DEBUG ONLY POS", 1.8)
+            self._schedule_poll("DEBUG ONLY GSM", 2.3)
 
         except Exception as e:
             self.connection_screen.ids.status_label.text = f"Ошибка: {e}"
@@ -1381,6 +1383,7 @@ class OkoMobileApp(MDApp):
                 if self.transport:
                     self.disconnect()
                 self._rx_buffer = ""
+                self._cancel_poll_events()
                 ser = serial.Serial(dev, 115200, timeout=0)
                 self.transport = ser
                 self.transport_kind = "serial"
@@ -1388,9 +1391,9 @@ class OkoMobileApp(MDApp):
                 self.connection_screen.ids.status_label.text_color = get_color_from_hex(SUCCESS)
                 self.sm.current = "dashboard"
                 Clock.schedule_interval(self._receive_data, 0.1)
-                Clock.schedule_once(lambda dt: self.send_cmd("VER"), 0.3)
-                Clock.schedule_once(lambda dt: self.send_cmd("serial"), 0.8)
-                Clock.schedule_once(lambda dt: self.send_cmd("SET"), 1.3)
+                self._schedule_poll("VER", 0.3)
+                self._schedule_poll("serial", 0.8)
+                self._schedule_poll("SET", 1.3)
                 return
             except Exception as e:
                 self._show_snackbar(f"{dev}: {e}")
@@ -1559,9 +1562,22 @@ class OkoMobileApp(MDApp):
             self.transport = None
 
         Clock.unschedule(self._receive_data)
+        self._cancel_poll_events()
         self.sm.current = "connection"
         self.connection_screen.ids.status_label.text = "Отключено"
         self.connection_screen.ids.status_label.text_color = get_color_from_hex(TEXT_SECONDARY)
+
+    def _schedule_poll(self, command: str, delay: float) -> None:
+        event = Clock.schedule_once(lambda dt, cmd=command: self.send_cmd(cmd), delay)
+        self._poll_events.append(event)
+
+    def _cancel_poll_events(self) -> None:
+        for event in self._poll_events:
+            try:
+                event.cancel()
+            except Exception:
+                pass
+        self._poll_events = []
 
     def on_stop(self):
         logging.info("Stopping application")
