@@ -15,6 +15,8 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QTextEdit,
     QComboBox,
+    QFileDialog,
+    QCheckBox,
 )
 
 from ..core.serial_worker import SerialWorker
@@ -55,6 +57,19 @@ class Terminal(QWidget):
         self._output.setReadOnly(True)
         self._output.setMinimumHeight(300)
         output_layout.addWidget(self._output)
+
+        tools_row = QHBoxLayout()
+        self._autoscroll = QCheckBox("Автопрокрутка")
+        self._autoscroll.setChecked(True)
+        tools_row.addWidget(self._autoscroll)
+        tools_row.addStretch()
+        self._btn_copy = QPushButton("Копировать")
+        self._btn_copy.clicked.connect(lambda: self._output.copy())
+        tools_row.addWidget(self._btn_copy)
+        self._btn_save_log = QPushButton("Сохранить лог")
+        self._btn_save_log.clicked.connect(self._save_log)
+        tools_row.addWidget(self._btn_save_log)
+        output_layout.addLayout(tools_row)
 
         main_layout.addWidget(output_card, stretch=1)
 
@@ -207,5 +222,17 @@ class Terminal(QWidget):
             '<span style="color: {};">{}</span>'.format(color, escaped)
         )
         sb = self._output.verticalScrollBar()
-        if sb:
+        if sb and self._autoscroll.isChecked():
             sb.setValue(sb.maximum())
+
+    def _save_log(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить журнал терминала", "oko-terminal.log",
+            "Текстовые файлы (*.log *.txt);;Все файлы (*)",
+        )
+        if path:
+            try:
+                with open(path, "w", encoding="utf-8") as handle:
+                    handle.write(self._output.toPlainText())
+            except OSError as exc:
+                self._append_line("!! Ошибка сохранения: {}".format(exc), "#ff5555")
