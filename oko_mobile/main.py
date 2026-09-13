@@ -1404,7 +1404,12 @@ class OkoMobileApp(MDApp):
                 self.transport.flush()
             else:
                 self.transport.sendall(data)
+        except (OSError, ConnectionError) as e:
+            logging.exception("Send failed")
+            self._show_snackbar(f"Соединение потеряно: {e}")
+            self.disconnect()
         except Exception as e:
+            logging.exception("Unexpected send failure")
             self._show_snackbar(f"Ошибка отправки: {e}")
 
     def _receive_data(self, dt):
@@ -1431,7 +1436,12 @@ class OkoMobileApp(MDApp):
                     self._process_response(text)
         except BlockingIOError:
             pass
+        except (OSError, ConnectionError) as e:
+            logging.exception("Receive failed")
+            self._show_snackbar(f"Соединение потеряно: {e}")
+            self.disconnect()
         except Exception as e:
+            logging.exception("Unexpected receive failure")
             self._show_snackbar(f"Ошибка приёма: {e}")
 
     def _process_response(self, text):
