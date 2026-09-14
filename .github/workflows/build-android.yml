@@ -59,6 +59,10 @@ jobs:
 
       - name: Build APK with Buildozer
         run: |
+          sdkmanager="$HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager"
+          if [ -x "$sdkmanager" ]; then
+            yes | "$sdkmanager" --licenses >/tmp/android-licenses.log || true
+          fi
           buildozer android release
 
       - name: Prepare release asset
