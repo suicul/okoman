@@ -8,6 +8,11 @@ on:
   push:
     tags: [ "v*" ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (for example 0.2)"
+        required: true
+        type: string
 
 jobs:
   build-android:
@@ -41,14 +46,16 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install "cython==0.29.36" buildozer
 
-      - name: Patch retired JCenter repository
-        run: |
-          if [ -d .buildozer ]; then
-            find .buildozer -type f -name '*.gradle' -print0 | xargs -0 -r sed -i 's/jcenter()/mavenCentral()/g'
-          fi
-
       - name: Sync version from tag
-        run: sed -i "s/^version = .*/version = ${GITHUB_REF_NAME#v}/" buildozer.spec
+        env:
+          RELEASE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || inputs.version }}
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_VERSION#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+          sed -i "s/^version = .*/version = ${version}/" buildozer.spec
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> "$GITHUB_ENV"
 
       - name: Build APK with Buildozer
         run: |
@@ -60,19 +67,28 @@ jobs:
           apk="$(find bin dist -type f -name '*.apk' -print -quit)"
           test -n "$apk"
           mkdir -p dist
-          cp "$apk" "dist/oko-service-tool-${GITHUB_REF_NAME}.apk"
+          cp "$apk" "dist/oko-service-tool-${RELEASE_TAG}.apk"
+
+      - name: Verify packaged Python dependencies
+        run: |
+          set -euo pipefail
+          apk="dist/oko-service-tool-${RELEASE_TAG}.apk"
+          unzip -l "$apk" > /tmp/apk-files.txt
+          for module in materialyoucolor materialshapes asynckivy asyncgui kivymd; do
+            grep -Eq "/${module}(/|\\.pyc|\\.so)" /tmp/apk-files.txt
+          done
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oko-service-tool-${{ github.ref_name }}
-          path: dist/oko-service-tool-${{ github.ref_name }}.apk
+          name: oko-service-tool-${{ env.RELEASE_TAG }}
+          path: dist/oko-service-tool-${{ env.RELEASE_TAG }}.apk
           retention-days: 90
           if-no-files-found: error
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
-          files: dist/oko-service-tool-${{ github.ref_name }}.apk
+          files: dist/oko-service-tool-${{ env.RELEASE_TAG }}.apk

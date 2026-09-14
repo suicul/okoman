@@ -1272,6 +1272,7 @@ class OkoMobileApp(MDApp):
         layout = MDBoxLayout(orientation="vertical")
 
         bottom_nav = MDNavigationBar(size_hint_y=None, height="80dp")
+        self._bottom_nav = bottom_nav
         self._navigation_items = []
         for name, text, icon in (
             ("dashboard_tab", "Обзор", "information"),
@@ -1296,9 +1297,20 @@ class OkoMobileApp(MDApp):
         layout.add_widget(bottom_nav)
 
         bottom_nav.bind(on_switch_tabs=self._on_navigation_event)
-        Clock.schedule_once(lambda _dt: bottom_nav.set_active_item(self._navigation_items[0][0]), 0)
+        Clock.schedule_once(self._activate_first_tab, 0)
 
         return layout
+
+    def _activate_first_tab(self, _dt) -> None:
+        try:
+            item = self._navigation_items[0][0]
+            set_active = getattr(self._bottom_nav, "set_active_item", None)
+            if callable(set_active):
+                set_active(item)
+            else:
+                item.active = True
+        except (AttributeError, IndexError, TypeError):
+            logging.exception("Unable to activate initial navigation item")
 
     def _on_tab_switch(self, tab_name):
         screen_map = {
@@ -1350,13 +1362,15 @@ class OkoMobileApp(MDApp):
         self.connection_screen.ids.status_label.text_color = get_color_from_hex(WARNING)
 
         def worker() -> None:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.settimeout(10)
                 sock.connect((ip, port))
                 sock.setblocking(False)
             except (OSError, ConnectionError) as error:
-                sock.close()
+                sock = locals().get("sock")
+                if sock is not None:
+                    sock.close()
                 Clock.schedule_once(lambda _dt, exc=error: self._finish_tcp_connect(generation, None, exc), 0)
                 return
             Clock.schedule_once(lambda _dt, connected_sock=sock: self._finish_tcp_connect(generation, connected_sock, None), 0)
