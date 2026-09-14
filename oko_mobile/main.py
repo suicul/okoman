@@ -107,7 +107,7 @@ KVStyleSheet = f"""
 # ── KV Screen Layouts ───────────────────────────────────────────────────────
 
 KV_CONNECTION = f"""
-ConnectionScreen:
+<ConnectionScreen>:
 
     MDBoxLayout:
         orientation: "vertical"
@@ -192,7 +192,7 @@ ConnectionScreen:
 """
 
 KV_DASHBOARD = f"""
-DashboardScreen:
+<DashboardScreen>:
 
     MDBoxLayout:
         orientation: "vertical"
@@ -414,7 +414,7 @@ DashboardScreen:
 """
 
 KV_DIAGNOSTICS = f"""
-DiagnosticsScreen:
+<DiagnosticsScreen>:
 
     MDBoxLayout:
         orientation: "vertical"
@@ -555,7 +555,7 @@ DiagnosticsScreen:
 """
 
 KV_CONFIGURATION = f"""
-ConfigurationScreen:
+<ConfigurationScreen>:
 
     MDBoxLayout:
         orientation: "vertical"
@@ -722,7 +722,7 @@ ConfigurationScreen:
 """
 
 KV_MONITOR = f"""
-MonitorScreen:
+<MonitorScreen>:
 
     MDBoxLayout:
         orientation: "vertical"
@@ -875,7 +875,7 @@ MonitorScreen:
 """
 
 KV_TERMINAL = f"""
-TerminalScreen:
+<TerminalScreen>:
 
     MDBoxLayout:
         orientation: "vertical"
