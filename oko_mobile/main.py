@@ -40,7 +40,6 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDButton, MDButtonText
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDListItemSupportingText
-from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
 
 # ── Shared color palette ────────────────────────────────────────────────────
 from oko_mobile.theme import (
@@ -1292,12 +1291,12 @@ class OkoMobileApp(MDApp):
         # KivyMD dispatches ``on_switch_tabs`` as (bar, item, icon, text).
         # Resolve the tab defensively: on some 2.x builds the callback may
         # provide a proxy widget instead of the exact object identity.
-        bottom_nav.bind(on_switch_tabs=self._on_navigation_event)
-        bottom_nav.set_active_item(self._navigation_items[0][0])
-
         self.sm.current = "connection"
         layout.add_widget(self.sm)
         layout.add_widget(bottom_nav)
+
+        bottom_nav.bind(on_switch_tabs=self._on_navigation_event)
+        Clock.schedule_once(lambda _dt: bottom_nav.set_active_item(self._navigation_items[0][0]), 0)
 
         return layout
 
@@ -1358,15 +1357,9 @@ class OkoMobileApp(MDApp):
                 sock.setblocking(False)
             except (OSError, ConnectionError) as error:
                 sock.close()
-                Clock.schedule_once(
-                    lambda _dt: self._finish_tcp_connect(generation, None, error),
-                    0,
-                )
+                Clock.schedule_once(lambda _dt, exc=error: self._finish_tcp_connect(generation, None, exc), 0)
                 return
-            Clock.schedule_once(
-                lambda _dt: self._finish_tcp_connect(generation, sock, None),
-                0,
-            )
+            Clock.schedule_once(lambda _dt, connected_sock=sock: self._finish_tcp_connect(generation, connected_sock, None), 0)
 
         threading.Thread(target=worker, name="oko-tcp-connect", daemon=True).start()
 
@@ -1571,13 +1564,12 @@ class OkoMobileApp(MDApp):
             pass
 
     def _show_snackbar(self, message):
-        """Show a brief notification."""
-        MDSnackbar(
-            MDSnackbarText(text=message),
-        ).open()
+        self.connection_screen.ids.status_label.text = message
+        self.connection_screen.ids.status_label.text_color = get_color_from_hex(WARNING)
 
     def disconnect(self):
         """Disconnect from device."""
+        self._connect_generation += 1
         if self.transport:
             try:
                 self.transport.close()
@@ -1587,9 +1579,10 @@ class OkoMobileApp(MDApp):
 
         Clock.unschedule(self._receive_data)
         self._cancel_poll_events()
-        self.sm.current = "connection"
-        self.connection_screen.ids.status_label.text = "Отключено"
-        self.connection_screen.ids.status_label.text_color = get_color_from_hex(TEXT_SECONDARY)
+        if hasattr(self, "sm") and hasattr(self, "connection_screen"):
+            self.sm.current = "connection"
+            self.connection_screen.ids.status_label.text = "Отключено"
+            self.connection_screen.ids.status_label.text_color = get_color_from_hex(TEXT_SECONDARY)
 
     def _schedule_poll(self, command: str, delay: float) -> None:
         event = Clock.schedule_once(lambda dt, cmd=command: self.send_cmd(cmd), delay)

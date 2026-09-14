@@ -78,7 +78,7 @@ android.permissions = INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, READ_EX
 #android.copy_libs = 1
 
 # (str) The format used to package the app for release mode (aab or apk).
-android.release_artifact = aab
+android.release_artifact = apk
 
 # (str) The format used to package the app for debug mode (apk or aar).
 android.debug_artifact = apk

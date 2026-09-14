@@ -6,15 +6,16 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
     tags: [ "v*" ]
   workflow_dispatch:
 
 jobs:
   build-android:
-    name: Android APK (debug)
+    name: Android APK release
     runs-on: ubuntu-22.04
     timeout-minutes: 120
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -40,25 +41,38 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install "cython==0.29.36" buildozer
 
-      - name: Accept Android SDK licences
-        run: |
-          mkdir -p ~/.buildozer/android/platform
-          yes | buildozer android debug 2>&1 | tail -5 || true
-        # NOTE: первая попытка только разворачивает SDK (может упасть на
-        # лицензиях) — реальная сборка следующим шагом.
-
       - name: Patch retired JCenter repository
         run: |
-          find .buildozer -type f -name '*.gradle' -print0 | xargs -0 sed -i 's/jcenter()/mavenCentral()/g'
+          if [ -d .buildozer ]; then
+            find .buildozer -type f -name '*.gradle' -print0 | xargs -0 -r sed -i 's/jcenter()/mavenCentral()/g'
+          fi
+
+      - name: Sync version from tag
+        run: sed -i "s/^version = .*/version = ${GITHUB_REF_NAME#v}/" buildozer.spec
 
       - name: Build APK with Buildozer
         run: |
-          buildozer android debug
+          buildozer android release
+
+      - name: Prepare release asset
+        run: |
+          set -euo pipefail
+          apk="$(find bin dist -type f -name '*.apk' -print -quit)"
+          test -n "$apk"
+          mkdir -p dist
+          cp "$apk" "dist/oko-service-tool-${GITHUB_REF_NAME}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oko-manager-android
-          path: dist/*.apk
+          name: oko-service-tool-${{ github.ref_name }}
+          path: dist/oko-service-tool-${{ github.ref_name }}.apk
           retention-days: 90
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: dist/oko-service-tool-${{ github.ref_name }}.apk
