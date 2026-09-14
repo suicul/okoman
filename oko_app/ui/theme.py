@@ -73,6 +73,8 @@ QStackedWidget {{
 #sidebar {{
     background-color: {BG_SECONDARY};
     border-right: 1px solid #26313b;
+    border: 1px solid #26313b;
+    border-radius: 10px;
     min-width: 208px;
     max-width: 208px;
 }}
@@ -119,6 +121,18 @@ QStackedWidget {{
 
 #appLogo {{
     background: transparent;
+    padding: 4px;
+}}
+
+#sidebarSeparator {{
+    background-color: #303b46;
+    max-height: 1px;
+    margin: 8px 0;
+}}
+
+QLabel[role="footerText"] {{
+    color: {TEXT_SECONDARY};
+    font-size: 11px;
     padding: 4px;
 }}
 

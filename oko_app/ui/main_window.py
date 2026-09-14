@@ -96,8 +96,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         root_layout = QHBoxLayout(central)
-        root_layout.setContentsMargins(12, 12, 12, 12)
-        root_layout.setSpacing(14)
+        root_layout.setContentsMargins(16, 16, 16, 16)
+        root_layout.setSpacing(16)
 
         # ── Sidebar ──────────────────────────────────────────────────────────
         sidebar = QFrame()
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
         sidebar.setMaximumWidth(208)
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(12, 16, 12, 16)
-        sidebar_layout.setSpacing(0)
+        sidebar_layout.setSpacing(6)
 
         # Logo / Title - vertical layout for better appearance
         logo_card = QWidget()
@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
         # Separator
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet("background-color: #30363d; max-height: 1px; margin: 12px 0;")
+        sep.setObjectName("sidebarSeparator")
         sidebar_layout.addWidget(sep)
 
         # Navigation buttons
@@ -203,13 +203,13 @@ class MainWindow(QMainWindow):
         author_label = QLabel("\u00a9 Гореловский И.А.")
         author_label.setObjectName("labelSecondary")
         author_label.setAlignment(Qt.AlignCenter)
-        author_label.setStyleSheet("color: #a0aab4; font-size: 11px; padding: 4px;")
+        author_label.setProperty("role", "footerText")
         footer_layout.addWidget(author_label)
 
         version_label = QLabel("v{}".format(__version__))
         version_label.setObjectName("labelSecondary")
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setStyleSheet("color: #a0aab4; font-size: 11px; padding: 4px;")
+        version_label.setProperty("role", "footerText")
         footer_layout.addWidget(version_label)
 
         sidebar_layout.addWidget(footer_card)
