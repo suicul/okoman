@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import sys
+import threading
 import traceback
 
 # Add project root to path for shared core imports
@@ -1206,6 +1207,7 @@ class OkoMobileApp(MDApp):
         self._log_path = ""
         self._rx_buffer = ""
         self._poll_events = []
+        self._connect_generation = 0
 
     def _configure_logging(self):
         self._log_path = os.path.join(self.user_data_dir, "oko-mobile.log")
@@ -1337,35 +1339,57 @@ class OkoMobileApp(MDApp):
 
     def connect_tcp(self, ip, port):
         """Connect via TCP (WiFi ТД платы OKO_XXXXXX, 192.168.4.1:1234)."""
-        try:
-            import socket
-            if self.transport:
-                self.disconnect()
-            self._rx_buffer = ""
-            self._cancel_poll_events()
-            self.transport = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.transport.settimeout(10)
-            self.transport.connect((ip, port))
-            self.transport.setblocking(False)
-            self.transport_kind = "tcp"
+        import socket
 
-            self.connection_screen.ids.status_label.text = f"Подключено: {ip}:{port}"
-            self.connection_screen.ids.status_label.text_color = get_color_from_hex(SUCCESS)
+        if self.transport:
+            self.disconnect()
+        self._connect_generation += 1
+        generation = self._connect_generation
+        self._rx_buffer = ""
+        self._cancel_poll_events()
+        self.connection_screen.ids.status_label.text = "Подключение..."
+        self.connection_screen.ids.status_label.text_color = get_color_from_hex(WARNING)
 
-            self.sm.current = "dashboard"
+        def worker() -> None:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                sock.settimeout(10)
+                sock.connect((ip, port))
+                sock.setblocking(False)
+            except (OSError, ConnectionError) as error:
+                sock.close()
+                Clock.schedule_once(
+                    lambda _dt: self._finish_tcp_connect(generation, None, error),
+                    0,
+                )
+                return
+            Clock.schedule_once(
+                lambda _dt: self._finish_tcp_connect(generation, sock, None),
+                0,
+            )
 
-            # Start receiving
-            Clock.schedule_interval(self._receive_data, 0.1)
-            # Автоопрос как на десктопе: версия, серийник, настройки, GPS, GSM.
-            self._schedule_poll("VER", 0.3)
-            self._schedule_poll("serial", 0.8)
-            self._schedule_poll("SET", 1.3)
-            self._schedule_poll("DEBUG ONLY POS", 1.8)
-            self._schedule_poll("DEBUG ONLY GSM", 2.3)
+        threading.Thread(target=worker, name="oko-tcp-connect", daemon=True).start()
 
-        except Exception as e:
-            self.connection_screen.ids.status_label.text = f"Ошибка: {e}"
+    def _finish_tcp_connect(self, generation, sock, error) -> None:
+        if generation != self._connect_generation:
+            if sock:
+                sock.close()
+            return
+        if error:
+            self.connection_screen.ids.status_label.text = f"Ошибка: {error}"
             self.connection_screen.ids.status_label.text_color = get_color_from_hex(DANGER)
+            return
+        self.transport = sock
+        self.transport_kind = "tcp"
+        self.connection_screen.ids.status_label.text = "Подключено"
+        self.connection_screen.ids.status_label.text_color = get_color_from_hex(SUCCESS)
+        self.sm.current = "dashboard"
+        Clock.schedule_interval(self._receive_data, 0.1)
+        self._schedule_poll("VER", 0.3)
+        self._schedule_poll("serial", 0.8)
+        self._schedule_poll("SET", 1.3)
+        self._schedule_poll("DEBUG ONLY POS", 1.8)
+        self._schedule_poll("DEBUG ONLY GSM", 2.3)
 
     def connect_usb_otg(self):
         """Резервный канал: USB OTG (нужен OTG-кабель; работает там, где ядро
